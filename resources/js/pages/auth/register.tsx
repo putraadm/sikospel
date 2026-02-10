@@ -21,25 +21,26 @@ export default function Register() {
                 {...store.form()}
                 resetOnSuccess={['password', 'password_confirmation']}
                 disableWhileProcessing
+                inert={true}
                 className="flex flex-col gap-6"
             >
                 {({ processing, errors }) => (
                     <>
                         <div className="grid gap-6">
                             <div className="grid gap-2">
-                                <Label htmlFor="name">Name</Label>
+                                <Label htmlFor="username">Username</Label>
                                 <Input
-                                    id="name"
+                                    id="username"
                                     type="text"
                                     required
                                     autoFocus
                                     tabIndex={1}
-                                    autoComplete="name"
-                                    name="name"
-                                    placeholder="Full name"
+                                    autoComplete="username"
+                                    name="username"
+                                    placeholder="Username"
                                 />
                                 <InputError
-                                    message={errors.name}
+                                    message={errors.username}
                                     className="mt-2"
                                 />
                             </div>
