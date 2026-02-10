@@ -21,6 +21,7 @@ export default function Register() {
                 {...store.form()}
                 resetOnSuccess={['password', 'password_confirmation']}
                 disableWhileProcessing
+                inert={true}
                 className="flex flex-col gap-6"
             >
                 {({ processing, errors }) => (
@@ -39,7 +40,7 @@ export default function Register() {
                                     placeholder="Username"
                                 />
                                 <InputError
-                                    message={errors.name}
+                                    message={errors.username}
                                     className="mt-2"
                                 />
                             </div>
