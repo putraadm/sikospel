@@ -7,16 +7,23 @@ use Illuminate\Database\Eloquent\Model;
 class Penghuni extends Model
 {
     protected $table = 'penghuni';
+    protected $primaryKey = 'user_id';
+    public $incrementing = false;
 
     protected $fillable = [
         'user_id',
         'name',
-        'room_id',
-        'move_in_date',
+        'no_wa',
+        'address',
+        'religion',
+        'file_path_kk',
+        'file_path_ktp',
     ];
 
-    public function room()
+    public function user()
     {
-        return $this->belongsTo(Room::class, 'room_id', 'id');
+        return $this->belongsTo(User::class);
     }
+
+
 }

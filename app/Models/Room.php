@@ -11,9 +11,9 @@ class Room extends Model
     protected $fillable = [
         'kos_id',
         'room_number',
-        'type',
-        'price',
-        'is_available',
+        'monthly_rate',
+        'status',
+        'description',
     ];
 
     public function kos()

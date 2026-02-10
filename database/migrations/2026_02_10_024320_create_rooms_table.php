@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('rooms', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('kos_id')->constrained('kos');
+            $table->foreignId('kos_id')->constrained('kos')->cascadeOnDelete();
             $table->string('room_number', 10);
             $table->decimal('monthly_rate', 10, 2);
             $table->enum('status', ['tersedia','ditempati','perbaikan'])->default('tersedia');

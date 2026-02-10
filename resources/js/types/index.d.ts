@@ -40,3 +40,39 @@ export interface User {
     updated_at: string;
     [key: string]: unknown; // This allows for additional properties...
 }
+
+export interface Kos {
+    id: number;
+    name: string;
+    address: string;
+    owner_id: number;
+    owner: {
+        name: string;
+        user: {
+            email: string;
+        };
+    };
+}
+
+export interface Room {
+    id: number;
+    kos_id: number;
+    room_number: string;
+    monthly_rate: number;
+    status: string;
+    description: string | null;
+    kos: {
+        name: string;
+    };
+}
+
+export interface Pemilik {
+    id: number;
+    user_id: number;
+    name: string;
+    no_wa: string | null;
+    address: string | null;
+    user: {
+        email: string;
+    };
+}

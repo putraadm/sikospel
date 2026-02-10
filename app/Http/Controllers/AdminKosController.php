@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Kos;
+use App\Models\Pemilik;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -9,39 +11,46 @@ class AdminKosController extends Controller
 {
     public function index()
     {
-        return Inertia::render('Admin/Kos/Index');
+        $kos = Kos::with('owner.user')->get();
+        $pemilik = Pemilik::with('user')->get();
+        return Inertia::render('admin/kos', [
+            'kos' => $kos,
+            'pemilik' => $pemilik,
+        ]);
     }
 
     public function store(Request $request)
     {
-        // Logic to store a new kos
         $request->validate([
             'owner_id' => 'required|exists:pemilik,user_id',
             'name' => 'required|string|max:255',
             'address' => 'required|string|max:500',
         ]);
-        // Kos::create($request->all());
-        return redirect()->back()->with('success', 'Kos created successfully.');
+
+        Kos::create($request->all());
+
+        return redirect()->back()->with('success', 'Kos berhasil dibuat.');
     }
 
     public function update(Request $request, $id)
     {
-        // Logic to update an existing kos
         $request->validate([
             'owner_id' => 'required|exists:pemilik,user_id',
             'name' => 'required|string|max:255',
             'address' => 'required|string|max:500',
         ]);
-        // $kos = Kos::findOrFail($id);
-        // $kos->update($request->all());
-        return redirect()->back()->with('success', 'Kos updated successfully.');
+
+        $kos = Kos::findOrFail($id);
+        $kos->update($request->all());
+
+        return redirect()->back()->with('success', 'Kos berhasil diperbarui.');
     }
 
     public function destroy($id)
     {
-        // Logic to delete a kos
-        // $kos = Kos::findOrFail($id);
-        // $kos->delete();
-        return redirect()->back()->with('success', 'Kos deleted successfully.');
+        $kos = Kos::findOrFail($id);
+        $kos->delete();
+
+        return redirect()->back()->with('success', 'Kos berhasil dihapus.');
     }
 }

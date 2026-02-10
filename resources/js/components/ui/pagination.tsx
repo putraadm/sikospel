@@ -1,0 +1,96 @@
+import { ChevronLeftIcon, ChevronRightIcon, MoreHorizontalIcon } from 'lucide-react';
+import * as React from 'react';
+
+import { Button, buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+
+function Pagination({ className, ...props }: React.ComponentProps<'nav'>) {
+    return (
+        <nav
+            role="navigation"
+            aria-label="pagination"
+            data-slot="pagination"
+            className={cn('mx-auto flex w-full justify-center', className)}
+            {...props}
+        />
+    );
+}
+
+function PaginationContent({ className, ...props }: React.ComponentProps<'ul'>) {
+    return <ul data-slot="pagination-content" className={cn('flex flex-row items-center gap-1', className)} {...props} />;
+}
+
+function PaginationItem({ ...props }: React.ComponentProps<'li'>) {
+    return <li data-slot="pagination-item" {...props} />;
+}
+
+type PaginationLinkProps = {
+    isActive?: boolean;
+} & Pick<React.ComponentProps<typeof Button>, 'size'> &
+    React.ComponentProps<'a'>;
+
+function PaginationLink({ className, isActive, size = 'icon', ...props }: PaginationLinkProps) {
+    return (
+        <a
+            aria-current={isActive ? 'page' : undefined}
+            data-slot="pagination-link"
+            data-active={isActive}
+            className={cn(
+                buttonVariants({
+                    variant: isActive ? 'outline' : 'ghost',
+                    size,
+                }),
+                className,
+            )}
+            {...props}
+        />
+    );
+}
+
+type PaginationButtonProps = {
+    isActive?: boolean;
+} & React.ComponentProps<typeof Button>;
+
+function PaginationButton({ className, isActive, variant, size = 'icon', ...props }: PaginationButtonProps) {
+    return (
+        <Button
+            aria-current={isActive ? 'page' : undefined}
+            data-slot="pagination-link"
+            data-active={isActive}
+            variant={variant}
+            // variant={isActive ? 'outline' : 'ghost'}
+            size={size}
+            className={className}
+            {...props}
+        />
+    );
+}
+
+function PaginationPrevious({ className, ...props }: React.ComponentProps<typeof PaginationButton>) {
+    return (
+        <PaginationButton aria-label="Ke halaman sebelumnya" size="icon" className={cn('', className)} {...props}>
+            <ChevronLeftIcon />
+            {/* <span className="hidden sm:block">Previous</span> */}
+        </PaginationButton>
+    );
+}
+
+function PaginationNext({ className, ...props }: React.ComponentProps<typeof PaginationButton>) {
+    return (
+        <PaginationButton aria-label="Ke halaman selanjutnya" size="icon" className={cn('', className)} {...props}>
+            {/* <span className="hidden sm:block">Next</span> */}
+            <ChevronRightIcon />
+        </PaginationButton>
+    );
+}
+
+function PaginationEllipsis({ className, ...props }: React.ComponentProps<'span'>) {
+    return (
+        <span aria-hidden data-slot="pagination-ellipsis" className={cn('flex size-9 items-center justify-center', className)} {...props}>
+            <MoreHorizontalIcon className="size-4" />
+            <span className="sr-only">Lebih banyak halaman</span>
+        </span>
+    );
+}
+
+export { Pagination, PaginationButton, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious };
