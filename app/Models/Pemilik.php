@@ -7,11 +7,13 @@ use Illuminate\Database\Eloquent\Model;
 class Pemilik extends Model
 {
     protected $table = 'pemilik';
+    protected $primaryKey = 'user_id';
 
     protected $fillable = [
         'user_id',
         'name',
-        'contact_info',
+        'no_wa',
+        'address',
     ];
 
     public function kos()
