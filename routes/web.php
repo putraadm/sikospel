@@ -9,6 +9,7 @@ use App\Http\Controllers\AdminRoleController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\PenghuniDashboardController;
 use App\Http\Controllers\PenghuniTagihanController;
+use App\Http\Controllers\PublicKosController;
 use App\Http\Controllers\PublicPendaftaranKosController;
 use App\Models\Kos;
 use App\Models\Room;
@@ -19,20 +20,38 @@ use App\Models\Penghuni;
 use App\Models\Pemilik;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use Illuminate\Http\Request;
 use Laravel\Fortify\Features;
 
-Route::get('/', function () {
-    $kos = Kos::with('rooms')->get();
+Route::get('/', function (Request $request) {
+    $search = $request->query('search');
+    
+    $query = Kos::with(['rooms' => function($q) {
+        $q->select('id', 'kos_id', 'room_number', 'monthly_rate', 'status');
+    }]);
+
+    if ($search) {
+        $query->where(function($q) use ($search) {
+            $q->where('name', 'like', "%{$search}%")
+              ->orWhere('address', 'like', "%{$search}%");
+        });
+    }
+
+    $kos = $query->get();
 
     return Inertia::render('welcome', [
         'canRegister' => Features::enabled(Features::registration()),
         'kos' => $kos,
+        'filters' => [
+            'search' => $search
+        ]
     ]);
 })->name('home');
 
-Route::get('pendaftaran-kos', [PublicPendaftaranKosController::class, 'create'])->name('public.pendaftaran-kos.create');
+Route::get('pendaftaran-kos-{slug?}', [PublicPendaftaranKosController::class, 'create'])->name('public.pendaftaran-kos.create');
 Route::post('pendaftaran-kos', [PublicPendaftaranKosController::class, 'store'])->name('public.pendaftaran-kos.store');
 Route::get('pendaftaran-kos/sukses/{id}', [PublicPendaftaranKosController::class, 'success'])->name('public.pendaftaran-kos.sukses');
+Route::get('kos/{slug}', [PublicKosController::class, 'show'])->name('public.kos.show');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {

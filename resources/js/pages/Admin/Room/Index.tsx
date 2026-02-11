@@ -2,13 +2,12 @@ import { Head, useForm, router } from '@inertiajs/react';
 import { Plus, Trash2, Edit, MoreHorizontal } from 'lucide-react';
 import { useState } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ConfirmDialog } from '@/components/app/confirm-dialog';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
+import { type BreadcrumbItem, type Room, type Kos, } from '@/types';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DataTable } from '@/components/ui/data-table';
@@ -27,21 +26,6 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-interface Kos {
-    id: number;
-    name: string;
-}
-
-interface Room {
-    id: number;
-    kos_id: number;
-    room_number: string;
-    description: string;
-    monthly_rate: number;
-    status: string;
-    kos: Kos;
-}
-
 interface Props {
     rooms: Room[];
     kos: Kos[];
@@ -54,6 +38,7 @@ export default function Index({ rooms, kos }: Props) {
         description: '',
         monthly_rate: '',
         status: 'tersedia',
+        image: null as File | null,
     });
 
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -64,6 +49,8 @@ export default function Index({ rooms, kos }: Props) {
         description: '',
         monthly_rate: '',
         status: '',
+        image: null as File | null,
+        _method: 'PUT',
     });
 
     // Delete confirmation state
@@ -74,6 +61,7 @@ export default function Index({ rooms, kos }: Props) {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         post('/admin/room', {
+            forceFormData: true,
             onSuccess: () => {
                 reset();
                 setShowCreateModal(false);
@@ -89,6 +77,8 @@ export default function Index({ rooms, kos }: Props) {
             description: item.description || '',
             monthly_rate: item.monthly_rate.toString(),
             status: item.status,
+            image: null,
+            _method: 'PUT',
         });
     };
 
@@ -100,11 +90,14 @@ export default function Index({ rooms, kos }: Props) {
             description: '',
             monthly_rate: '',
             status: '',
+            image: null,
+            _method: 'PUT',
         });
     };
 
     const handleUpdate = (id: number) => {
-        router.put(`/admin/room/${id}`, editData, {
+        router.post(`/admin/room/${id}`, editData, {
+            forceFormData: true,
             onSuccess: () => {
                 setEditingId(null);
                 setEditData({
@@ -113,6 +106,8 @@ export default function Index({ rooms, kos }: Props) {
                     description: '',
                     monthly_rate: '',
                     status: '',
+                    image: null,
+                    _method: 'PUT',
                 });
             },
         });
@@ -141,9 +136,22 @@ export default function Index({ rooms, kos }: Props) {
 
     const columns: ColumnDef<Room>[] = [
         {
+            accessorKey: 'image',
+            header: 'Foto',
+            cell: ({ row }) => (
+                <div className="size-12 overflow-hidden rounded-md border bg-neutral-100">
+                    {row.getValue('image') ? (
+                        <img src={`/storage/${row.getValue('image')}`} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                        <div className="flex h-full w-full items-center justify-center text-[10px] text-neutral-400">No Image</div>
+                    )}
+                </div>
+            ),
+        },
+        {
             accessorKey: 'room_number',
             header: 'No. Kamar',
-            cell: ({ row }) => <div className="font-medium">{row.getValue('room_number')}</div>,
+            cell: ({ row }) => <div className="font-medium text-primary">{row.getValue('room_number')}</div>,
         },
         {
             accessorKey: 'kos.name',
@@ -218,7 +226,7 @@ export default function Index({ rooms, kos }: Props) {
                         columns={columns}
                         data={rooms}
                         headerAction={
-                            <Button onClick={() => setShowCreateModal(true)}>
+                            <Button onClick={() => setShowCreateModal(true)} className="bg-primary hover:bg-primary/90 text-white">
                                 <Plus className="h-4 w-4" />
                                 Tambah
                             </Button>
@@ -278,8 +286,7 @@ export default function Index({ rooms, kos }: Props) {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="tersedia">Tersedia</SelectItem>
-                                        <SelectItem value="terisi">Terisi</SelectItem>
-                                        <SelectItem value="perbaikan">Perbaikan</SelectItem>
+                                        <SelectItem value="ditempati">Ditempati</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 {errors.status && <p className="text-sm text-red-600">{errors.status}</p>}
@@ -294,11 +301,21 @@ export default function Index({ rooms, kos }: Props) {
                                 />
                                 {errors.description && <p className="text-sm text-red-600">{errors.description}</p>}
                             </div>
+                            <div>
+                                <Label htmlFor="image">Foto Kamar</Label>
+                                <Input
+                                    id="image"
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => setData('image', e.target.files ? e.target.files[0] : null)}
+                                />
+                                {errors.image && <p className="text-sm text-red-600">{errors.image}</p>}
+                            </div>
                             <div className="flex justify-end gap-2">
                                 <Button type="button" variant="outline" onClick={() => setShowCreateModal(false)}>
                                     Batal
                                 </Button>
-                                <Button type="submit" disabled={processing}>
+                                <Button type="submit" disabled={processing} className="bg-primary hover:bg-primary/90 text-white">
                                     Simpan
                                 </Button>
                             </div>
@@ -369,11 +386,20 @@ export default function Index({ rooms, kos }: Props) {
                                     placeholder="Deskripsi"
                                 />
                             </div>
+                            <div>
+                                <Label htmlFor="edit-image">Foto Kamar (Opsional)</Label>
+                                <Input
+                                    id="edit-image"
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => setEditData({ ...editData, image: e.target.files ? e.target.files[0] : null })}
+                                />
+                            </div>
                             <div className="flex justify-end gap-2">
                                 <Button type="button" variant="outline" onClick={handleCancelEdit}>
                                     Batal
                                 </Button>
-                                <Button type="submit">
+                                <Button type="submit" className="bg-primary hover:bg-primary/90 text-white">
                                     Update
                                 </Button>
                             </div>

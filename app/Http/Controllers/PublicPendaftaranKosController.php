@@ -11,13 +11,18 @@ use Inertia\Inertia;
 
 class PublicPendaftaranKosController extends Controller
 {
-    public function create(Request $request)
+    public function create(Request $request, $slug = null)
     {
-        $kosId = $request->query('kos_id');
         $kos = Kos::with(['rooms' => function ($q) {
             $q->select('id', 'kos_id', 'room_number', 'monthly_rate', 'status');
         }])->get();
-        $selectedKos = $kosId ? Kos::find($kosId) : null;
+
+        $selectedKos = null;
+        if ($slug) {
+            $selectedKos = Kos::where('slug', $slug)->first();
+        } elseif ($request->query('kos_id')) {
+            $selectedKos = Kos::find($request->query('kos_id'));
+        }
 
         return Inertia::render('Public/Pendaftaran/Create', [
             'kosList' => $kos,

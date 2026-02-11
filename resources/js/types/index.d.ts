@@ -34,27 +34,35 @@ export interface User {
     username: string;
     email: string;
     avatar?: string;
-    email_verified_at: string | null;
+    email_verified_at?: string | null;
     two_factor_enabled?: boolean;
-    created_at: string;
-    updated_at: string;
-    role: {
+    created_at?: string;
+    updated_at?: string;
+    role?: {
         name: string;
     };
     [key: string]: unknown;
 }
 
+export interface Pemilik {
+    id: number;
+    user_id: number;
+    name: string;
+    no_wa: string | null;
+    address: string | null;
+    user: User;
+}
+
 export interface Kos {
     id: number;
+    owner_id: number;
     name: string;
     address: string;
-    owner_id: number;
-    owner: {
-        name: string;
-        user: {
-            email: string;
-        };
-    };
+    description: string;
+    slug: string;
+    image: string;
+    owner: Pemilik;
+    rooms?: Room[];
 }
 
 export interface Room {
@@ -64,18 +72,6 @@ export interface Room {
     monthly_rate: number;
     status: string;
     description: string | null;
-    kos: {
-        name: string;
-    };
-}
-
-export interface Pemilik {
-    id: number;
-    user_id: number;
-    name: string;
-    no_wa: string | null;
-    address: string | null;
-    user: {
-        email: string;
-    };
+    image: string | null;
+    kos: Kos;
 }

@@ -14,6 +14,7 @@ class Room extends Model
         'monthly_rate',
         'status',
         'description',
+        'image',
     ];
 
     public function kos()

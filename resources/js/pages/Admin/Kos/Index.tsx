@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ConfirmDialog } from '@/components/app/confirm-dialog';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
+import { type BreadcrumbItem, type Kos, type Pemilik } from '@/types';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DataTable } from '@/components/ui/data-table';
@@ -25,26 +25,6 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-interface User {
-    id: number;
-    username: string;
-}
-
-interface Pemilik {
-    user_id: number;
-    name: string;
-    user: User;
-}
-
-interface Kos {
-    id: number;
-    owner_id: number;
-    name: string;
-    address: string;
-    owner: Pemilik;
-}
-
-
 interface Props {
     kos: Kos[];
     pemilik: Pemilik[];
@@ -56,6 +36,7 @@ export default function Index({ kos, pemilik, userRole }: Props) {
         owner_id: '',
         name: '',
         address: '',
+        description: '',
         image: null as File | null,
     });
 
@@ -65,6 +46,7 @@ export default function Index({ kos, pemilik, userRole }: Props) {
         owner_id: '',
         name: '',
         address: '',
+        description: '',
         image: null as File | null,
         _method: 'PUT',
     });
@@ -89,6 +71,7 @@ export default function Index({ kos, pemilik, userRole }: Props) {
             owner_id: item.owner_id.toString(),
             name: item.name,
             address: item.address,
+            description: item.description,
             image: null,
             _method: 'PUT',
         });
@@ -100,13 +83,13 @@ export default function Index({ kos, pemilik, userRole }: Props) {
             owner_id: '',
             name: '',
             address: '',
+            description: '',
             image: null,
             _method: 'PUT',
         });
     };
 
     const handleUpdate = (id: number) => {
-        // Use router.post with _method: 'PUT' to handle file uploads
         router.post(`/admin/kos/${id}`, editData, {
             onSuccess: () => {
                 setEditingId(null);
@@ -114,6 +97,7 @@ export default function Index({ kos, pemilik, userRole }: Props) {
                     owner_id: '',
                     name: '',
                     address: '',
+                    description: '',
                     image: null,
                     _method: 'PUT',
                 });
@@ -146,7 +130,7 @@ export default function Index({ kos, pemilik, userRole }: Props) {
         {
             accessorKey: 'name',
             header: 'Nama Kos',
-            cell: ({ row }) => <div className="font-medium">{row.getValue('name')}</div>,
+            cell: ({ row }) => <div className="font-medium text-primary">{row.getValue('name')}</div>,
         },
         {
             accessorKey: 'owner',
@@ -203,7 +187,7 @@ export default function Index({ kos, pemilik, userRole }: Props) {
                         columns={columns}
                         data={kos}
                         headerAction={
-                            <Button onClick={() => setShowCreateModal(true)}>
+                            <Button onClick={() => setShowCreateModal(true)} className="bg-primary hover:bg-primary/90 text-white">
                                 <Plus className="h-4 w-4" />
                                 Tambah
                             </Button>
@@ -213,7 +197,7 @@ export default function Index({ kos, pemilik, userRole }: Props) {
 
                 {/* Create Modal */}
                 <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-                    <DialogContent>
+                    <DialogContent className="max-w-2xl">
                         <DialogHeader>
                             <DialogTitle>Tambah Kos Baru</DialogTitle>
                         </DialogHeader>
@@ -257,6 +241,17 @@ export default function Index({ kos, pemilik, userRole }: Props) {
                                 {errors.address && <p className="text-sm text-red-600">{errors.address}</p>}
                             </div>
                             <div>
+                                <Label htmlFor="description">Informasi Kos (Deskripsi)</Label>
+                                <Textarea
+                                    id="description"
+                                    value={data.description}
+                                    onChange={(e) => setData('description', e.target.value)}
+                                    placeholder="Informasi detail tentang kos..."
+                                    rows={5}
+                                />
+                                {errors.description && <p className="text-sm text-red-600">{errors.description}</p>}
+                            </div>
+                            <div>
                                 <Label htmlFor="image">Gambar Thumbnail</Label>
                                 <Input
                                     id="image"
@@ -270,7 +265,7 @@ export default function Index({ kos, pemilik, userRole }: Props) {
                                 <Button type="button" variant="outline" onClick={() => setShowCreateModal(false)}>
                                     Batal
                                 </Button>
-                                <Button type="submit" disabled={processing}>
+                                <Button type="submit" disabled={processing} className="bg-primary hover:bg-primary/90 text-white">
                                     Simpan
                                 </Button>
                             </div>
@@ -280,7 +275,7 @@ export default function Index({ kos, pemilik, userRole }: Props) {
 
                 {/* Edit Modal */}
                 <Dialog open={editingId !== null} onOpenChange={(open) => !open && handleCancelEdit()}>
-                    <DialogContent>
+                    <DialogContent className="max-w-2xl">
                         <DialogHeader>
                             <DialogTitle>Edit Kos</DialogTitle>
                         </DialogHeader>
@@ -312,12 +307,22 @@ export default function Index({ kos, pemilik, userRole }: Props) {
                                 />
                             </div>
                             <div>
-                                <Label htmlFor="edit-description">Deskripsi (Alamat)</Label>
+                                <Label htmlFor="edit-address">Alamat</Label>
                                 <Textarea
                                     id="edit-address"
                                     value={editData.address}
                                     onChange={(e) => setEditData({ ...editData, address: e.target.value })}
                                     placeholder="Alamat Lengkap"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="edit-description">Informasi Kos (Deskripsi)</Label>
+                                <Textarea
+                                    id="edit-description"
+                                    value={editData.description}
+                                    onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                                    placeholder="Informasi detail kos"
+                                    rows={5}
                                 />
                             </div>
                             <div>
@@ -333,7 +338,7 @@ export default function Index({ kos, pemilik, userRole }: Props) {
                                 <Button type="button" variant="outline" onClick={handleCancelEdit}>
                                     Batal
                                 </Button>
-                                <Button type="submit">
+                                <Button type="submit" className="bg-primary hover:bg-primary/90 text-white">
                                     Update
                                 </Button>
                             </div>

@@ -43,6 +43,7 @@ class AdminKosController extends Controller
         $rules = [
             'name' => 'required|string|max:255',
             'address' => 'required|string|max:500',
+            'description' => 'required|string',
             'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
         ];
 
@@ -104,6 +105,7 @@ class AdminKosController extends Controller
         $rules = [
             'name' => 'required|string|max:255',
             'address' => 'required|string|max:500',
+            'description' => 'required|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ];
 

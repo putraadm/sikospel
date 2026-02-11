@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Kos;
 use App\Models\Room;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Intervention\Image\Facades\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 use Inertia\Inertia;
 
 class AdminKamarController extends Controller
@@ -27,9 +30,31 @@ class AdminKamarController extends Controller
             'monthly_rate' => 'required|numeric',
             'status' => 'required|string|max:255',
             'description' => 'nullable|string|max:500',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        Room::create($request->all());
+        $data = $request->all();
+
+        if ($request->hasFile('image')) {
+            $imageStart = $request->file('image');
+            $imageName = time() . '_' . uniqid() . '.' . $imageStart->getClientOriginalExtension();
+            
+            $manager = new ImageManager(new Driver());
+            $image = $manager->read($imageStart);
+            
+            if ($image->width() > 800) {
+                $image->scale(width: 800);
+            }
+            
+            $path = 'room-images/' . $imageName;
+            $encoded = $image->toJpeg(quality: 80); 
+            
+            Storage::disk('public')->put($path, (string) $encoded);
+            
+            $data['image'] = $path;
+        }
+
+        Room::create($data);
 
         return redirect()->back()->with('success', 'Kamar berhasil dibuat.');
     }
@@ -42,10 +67,36 @@ class AdminKamarController extends Controller
             'monthly_rate' => 'required|numeric',
             'status' => 'required|string|max:255',
             'description' => 'nullable|string|max:500',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         $room = Room::findOrFail($id);
-        $room->update($request->all());
+        $data = $request->all();
+
+        if ($request->hasFile('image')) {
+            if ($room->image) {
+                Storage::disk('public')->delete($room->image);
+            }
+
+            $imageStart = $request->file('image');
+            $imageName = time() . '_' . uniqid() . '.' . $imageStart->getClientOriginalExtension();
+            
+            $manager = new ImageManager(new Driver());
+            $image = $manager->read($imageStart);
+            
+            if ($image->width() > 800) {
+                $image->scale(width: 800);
+            }
+            
+            $path = 'room-images/' . $imageName;
+            $encoded = $image->toJpeg(quality: 80); 
+            
+            Storage::disk('public')->put($path, (string) $encoded);
+            
+            $data['image'] = $path;
+        }
+
+        $room->update($data);
 
         return redirect()->back()->with('success', 'Kamar berhasil diperbarui.');
     }

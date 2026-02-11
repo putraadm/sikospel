@@ -16,8 +16,9 @@ return new class extends Migration
             $table->foreignId('kos_id')->constrained('kos')->cascadeOnDelete();
             $table->string('room_number', 10);
             $table->decimal('monthly_rate', 10, 2);
-            $table->enum('status', ['tersedia','ditempati','perbaikan'])->default('tersedia');
+            $table->enum('status', ['tersedia','ditempati'])->default('tersedia');
             $table->text('description')->nullable();
+            $table->text('image')->nullable();
             $table->timestamps();
         });
     }
