@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Pemilik;
 use App\Models\User;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -14,7 +15,7 @@ class AdminPemilikController extends Controller
         $pemilik = Pemilik::with('user')->get();
         $users = User::all();
 
-        return Inertia::render('admin/pemilik', [
+        return Inertia::render('Admin/Pemilik/Index', [
             'pemilik' => $pemilik,
             'users' => $users,
         ]);
@@ -23,15 +24,32 @@ class AdminPemilikController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'user_id' => 'required|exists:users,id|unique:pemilik,user_id',
             'name' => 'required|string|max:255',
             'no_wa' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:500',
         ]);
 
-        Pemilik::create($request->all());
+        $username = strtolower(str_replace(' ', '', $request->name)) . rand(100, 999);
+        $email = $username . '@sikospel.com';
+        $password = bcrypt('password');
 
-        return redirect()->back()->with('success', 'Pemilik created successfully.');
+        $role = Role::where('name', 'pemilik')->first();
+
+        $user = User::create([
+            'username' => $username,
+            'email' => $email,
+            'password' => $password,
+            'role_id' => $role ? $role->id : null,
+        ]);
+
+        Pemilik::create([
+            'user_id' => $user->id,
+            'name' => $request->name,
+            'no_wa' => $request->no_wa,
+            'address' => $request->address,
+        ]);
+
+        return redirect()->back()->with('success', 'Pemilik created successfully. User account: ' . $username . ' / password');
     }
 
     public function update(Request $request, $id)

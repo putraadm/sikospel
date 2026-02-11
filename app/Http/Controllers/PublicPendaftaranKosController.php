@@ -3,21 +3,25 @@
 namespace App\Http\Controllers;
 
 use App\Models\Kos;
-use App\Models\Penghuni;
+use App\Models\User;
 use App\Models\PendaftaranKos;
-use App\Models\Room;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class PublicPendaftaranKosController extends Controller
 {
-    public function create()
+    public function create(Request $request)
     {
-        $kos = Kos::with('rooms')->get();
+        $kosId = $request->query('kos_id');
+        $kos = Kos::with(['rooms' => function ($q) {
+            $q->select('id', 'kos_id', 'room_number', 'monthly_rate', 'status');
+        }])->get();
+        $selectedKos = $kosId ? Kos::find($kosId) : null;
 
-        return Inertia::render('Public/PendaftaranKos/Create', [
-            'kos' => $kos,
+        return Inertia::render('Public/Pendaftaran/Create', [
+            'kosList' => $kos,
+            'selectedKos' => $selectedKos,
         ]);
     }
 
@@ -25,37 +29,58 @@ class PublicPendaftaranKosController extends Controller
     {
         $request->validate([
             'kos_id' => 'required|exists:kos,id',
-            'preferred_room_id' => 'nullable|exists:rooms,id',
-            'name' => 'required|string|max:255',
-            'address' => 'required|string',
-            'religion' => 'required|string|max:50',
+            'start_date' => 'required|date|after_or_equal:today',
+            'notes' => 'nullable|string|max:1000',
+            'nama' => 'required|string|max:255',
             'no_wa' => 'required|string|max:20',
+            'alamat' => 'required|string|max:500',
+            'agama' => 'required|string|max:50',
             'file_ktp' => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
             'file_kk' => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
         ]);
 
-        // Upload files
-        $ktpPath = $request->file('file_ktp')->store('uploads/ktp', 'public');
-        $kkPath = $request->file('file_kk')->store('uploads/kk', 'public');
+        $pathKtp = $request->file('file_ktp')->store('documents/ktp', 'public');
+        $pathKk = $request->file('file_kk')->store('documents/kk', 'public');
 
-        // Create penghuni record
-        $penghuni = Penghuni::create([
-            'name' => $request->name,
-            'address' => $request->address,
-            'religion' => $request->religion,
-            'no_wa' => $request->no_wa,
-            'file_path_ktp' => $ktpPath,
-            'file_path_kk' => $kkPath,
-        ]);
-
-        // Create pendaftaran record
-        PendaftaranKos::create([
+        $pendaftaran = PendaftaranKos::create([
             'kos_id' => $request->kos_id,
-            'calon_penghuni_id' => $penghuni->id,
-            'preferred_room_id' => $request->preferred_room_id,
+            'nama' => $request->nama,
+            'no_wa' => $request->no_wa,
+            'alamat' => $request->alamat,
+            'agama' => $request->agama,
+            'file_path_ktp' => $pathKtp,
+            'file_path_kk' => $pathKk,
+            'start_date' => $request->start_date,
             'status' => 'menunggu',
+            'notes' => $request->notes,
         ]);
 
-        return redirect()->back()->with('success', 'Pendaftaran berhasil dikirim. Silakan tunggu konfirmasi dari pemilik kos.');
+        return redirect('/pendaftaran-kos/sukses/' . $pendaftaran->id);
+    }
+
+    public function success($id)
+    {
+        $pendaftaran = PendaftaranKos::with(['kos', 'assignedRoom'])->find($id);
+
+        if (!$pendaftaran) {
+            return redirect()->route('home');
+        }
+
+        $generatedUser = null;
+        if ($pendaftaran->status === 'diterima' && $pendaftaran->calon_penghuni_id) {
+            $user = User::find($pendaftaran->calon_penghuni_id);
+            if ($user) {
+                $generatedUser = [
+                    'username' => $user->username,
+                    'email' => $user->email,
+                    'password' => $pendaftaran->generated_password_plain,
+                ];
+            }
+        }
+
+        return Inertia::render('Public/Pendaftaran/Success', [
+            'pendaftaran' => $pendaftaran,
+            'generatedUser' => $generatedUser,
+        ]);
     }
 }

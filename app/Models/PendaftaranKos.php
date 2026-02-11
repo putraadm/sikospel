@@ -9,14 +9,23 @@ class PendaftaranKos extends Model
     protected $fillable = [
         'kos_id',
         'calon_penghuni_id',
-        'preferred_room_id',
+        'nama',
+        'no_wa',
+        'alamat',
+        'agama',
+        'file_path_ktp',
+        'file_path_kk',
+        'start_date',
+        'assigned_room_id',
         'status',
+        'generated_password_plain',
         'notes',
         'verified_at',
     ];
 
     protected $casts = [
         'verified_at' => 'datetime',
+        'start_date' => 'date',
     ];
 
     public function kos()
@@ -29,8 +38,8 @@ class PendaftaranKos extends Model
         return $this->belongsTo(Penghuni::class, 'calon_penghuni_id', 'user_id');
     }
 
-    public function preferredRoom()
+    public function assignedRoom()
     {
-        return $this->belongsTo(Room::class, 'preferred_room_id');
+        return $this->belongsTo(Room::class, 'assigned_room_id');
     }
 }

@@ -25,5 +25,13 @@ class Penghuni extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function penyewaan()
+    {
+        return $this->hasMany(Penyewaan::class, 'penghuni_id', 'user_id');
+    }
 
+    public function pendaftaran()
+    {
+        return $this->hasMany(PendaftaranKos::class, 'calon_penghuni_id', 'user_id');
+    }
 }

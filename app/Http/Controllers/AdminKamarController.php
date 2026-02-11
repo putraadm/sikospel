@@ -13,7 +13,7 @@ class AdminKamarController extends Controller
     {
         $rooms = Room::with('kos.owner.user')->get();
         $kos = Kos::with('owner.user')->get();
-        return Inertia::render('admin/room', [
+        return Inertia::render('Admin/Room/Index', [
             'rooms' => $rooms,
             'kos' => $kos,
         ]);

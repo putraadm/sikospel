@@ -29,7 +29,7 @@ export function NavUser() {
                     <DropdownMenuTrigger asChild>
                         <SidebarMenuButton
                             size="lg"
-                            className="group text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent"
+                            className="group text-sidebar-accent-foreground bg-primary hover:bg-primary/90 hover:text-primary-foreground data-[state=open]:bg-primary data-[state=open]:text-primary-foreground"
                             data-test="sidebar-menu-button"
                         >
                             <UserInfo user={auth.user} />
@@ -43,8 +43,8 @@ export function NavUser() {
                             isMobile
                                 ? 'bottom'
                                 : state === 'collapsed'
-                                  ? 'left'
-                                  : 'bottom'
+                                    ? 'left'
+                                    : 'bottom'
                         }
                     >
                         <UserMenuContent user={auth.user} />

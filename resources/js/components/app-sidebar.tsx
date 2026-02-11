@@ -1,5 +1,5 @@
-import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, User, Users, FileText, } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react';
+import { BookOpen, Folder, LayoutGrid, User, Users, FileText, BedDouble, Home, CreditCard } from 'lucide-react';
 
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -14,11 +14,12 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
-import { type NavItem } from '@/types';
+import { type NavItem, type SharedData } from '@/types';
 
 import AppLogo from './app-logo';
 
-const mainNavItems: NavItem[] = [
+// Admin & Pemilik nav items
+const adminNavItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: dashboard(),
@@ -35,11 +36,6 @@ const mainNavItems: NavItem[] = [
         icon: User,
     },
     {
-        title: 'Pendaftar',
-        href: '/admin/pendaftaran-kos',
-        icon: FileText,
-    },
-    {
         title: 'Pemilik',
         href: '/admin/pemilik',
         icon: User,
@@ -47,29 +43,59 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Kos',
         href: '/admin/kos',
-        icon: User,
+        icon: Home,
     },
     {
         title: 'Room',
         href: '/admin/room',
-        icon: User,
+        icon: BedDouble,
+    },
+    {
+        title: 'Pendaftar',
+        href: '/admin/pendaftaran-kos',
+        icon: FileText,
+    },
+    {
+        title: 'Penghuni',
+        href: '/admin/penghuni',
+        icon: Users,
     },
 ];
 
-const footerNavItems: NavItem[] = [
-    // {
-    //     title: 'Repository',
-    //     href: 'https://github.com/laravel/react-starter-kit',
-    //     icon: Folder,
-    // },
-    // {
-    //     title: 'Documentation',
-    //     href: 'https://laravel.com/docs/starter-kits#react',
-    //     icon: BookOpen,
-    // },
+// Penghuni nav items
+const penghuniNavItems: NavItem[] = [
+    {
+        title: 'Dashboard',
+        href: dashboard(),
+        icon: LayoutGrid,
+    },
+    {
+        title: 'Tagihan',
+        href: '/penghuni/tagihan',
+        icon: CreditCard,
+    },
 ];
 
+const footerNavItems: NavItem[] = [];
+
 export function AppSidebar() {
+    const { auth } = usePage<SharedData>().props;
+    const roleName = auth.user?.role?.name;
+
+    const getNavItems = (): NavItem[] => {
+        if (roleName === 'penghuni') {
+            return penghuniNavItems;
+        }
+        // Admin/pemilik — filter by role
+        return adminNavItems.filter(item => {
+            if (roleName === 'superadmin') return true;
+            if (roleName === 'pemilik') {
+                return ['Dashboard', 'Pendaftar', 'Penghuni', 'Kos', 'Room'].includes(item.title);
+            }
+            return false;
+        });
+    };
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
@@ -85,7 +111,7 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} />
+                <NavMain items={getNavItems()} />
             </SidebarContent>
 
             <SidebarFooter>

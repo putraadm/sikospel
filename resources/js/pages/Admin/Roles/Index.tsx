@@ -115,8 +115,8 @@ export default function Index({ roles }: Props) {
                                 {errors.name && <p className="text-sm text-red-600">{errors.name}</p>}
                             </div>
                             <Button type="submit" disabled={processing}>
-                                <Plus className="mr-2 h-4 w-4" />
-                                Tambah Role
+                                <Plus className="h-4 w-4" />
+                                Tambah
                             </Button>
                         </form>
                     </div>

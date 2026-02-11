@@ -1,8 +1,14 @@
 <?php
 
+use App\Http\Controllers\AdminKamarController;
+use App\Http\Controllers\AdminKosController;
+use App\Http\Controllers\AdminPemilikController;
 use App\Http\Controllers\AdminPendaftaranKosController;
+use App\Http\Controllers\AdminPenghuniController;
 use App\Http\Controllers\AdminRoleController;
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\PenghuniDashboardController;
+use App\Http\Controllers\PenghuniTagihanController;
 use App\Http\Controllers\PublicPendaftaranKosController;
 use App\Models\Kos;
 use Illuminate\Support\Facades\Route;
@@ -20,20 +26,39 @@ Route::get('/', function () {
 
 Route::get('pendaftaran-kos', [PublicPendaftaranKosController::class, 'create'])->name('public.pendaftaran-kos.create');
 Route::post('pendaftaran-kos', [PublicPendaftaranKosController::class, 'store'])->name('public.pendaftaran-kos.store');
+Route::get('pendaftaran-kos/sukses/{id}', [PublicPendaftaranKosController::class, 'success'])->name('public.pendaftaran-kos.sukses');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    // Dashboard — route berdasarkan role
     Route::get('dashboard', function () {
+        $user = auth()->user();
+        if ($user->role && $user->role->name === 'penghuni') {
+            return app(PenghuniDashboardController::class)->index(request());
+        }
         return Inertia::render('dashboard');
     })->name('dashboard');
 
+    // Penghuni routes
+    Route::middleware(['role:penghuni'])->prefix('penghuni')->group(function () {
+        Route::get('tagihan', [PenghuniTagihanController::class, 'index'])->name('penghuni.tagihan');
+    });
+
     Route::prefix('admin')->group(function () {
-        Route::resource('roles', AdminRoleController::class);
-        Route::resource('users', AdminUserController::class);
-        Route::resource('pendaftaran-kos', AdminPendaftaranKosController::class);
-        Route::resource('penghuni', AdminPenghuniController::class);
-        Route::resource('pemilik', AdminPemilikController::class);
-        Route::resource('kos', AdminKosController::class);
-        Route::resource('room', AdminKamarController::class);
+        // Superadmin only
+        Route::middleware(['role:superadmin'])->group(function () {
+            Route::resource('roles', AdminRoleController::class);
+            Route::resource('users', AdminUserController::class);
+            Route::resource('pemilik', AdminPemilikController::class);
+        });
+
+        // Superadmin and Pemilik
+        Route::middleware(['role:superadmin,pemilik'])->group(function () {
+            Route::resource('pendaftaran-kos', AdminPendaftaranKosController::class)
+                ->parameters(['pendaftaran-kos' => 'pendaftaranKos']);
+            Route::resource('penghuni', AdminPenghuniController::class);
+            Route::resource('kos', AdminKosController::class);
+            Route::resource('room', AdminKamarController::class);
+        });
     });
 });
 

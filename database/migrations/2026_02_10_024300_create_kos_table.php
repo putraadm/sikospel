@@ -15,7 +15,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('owner_id')->constrained('pemilik', 'user_id');
             $table->string('name');
+            $table->string('slug')->unique();
             $table->text('address');
+            $table->text('image');
             $table->timestamps();
         });
     }

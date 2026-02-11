@@ -4,14 +4,16 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Models\Penghuni;
+use App\Models\User;
 
 class AdminPenghuniController extends Controller
 {
     public function index()
     {
-        $penghuni = \App\Models\Penghuni::with('user')->get();
-        $users = \App\Models\User::all();
-        return Inertia::render('admin/penghuni', [
+        $penghuni = Penghuni::with('user')->get();
+        $users = User::all();
+        return Inertia::render('Admin/Penghuni/Index', [
             'penghuni' => $penghuni,
             'users' => $users,
         ]);

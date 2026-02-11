@@ -12,11 +12,18 @@ class Kos extends Model
     protected $fillable = [
         'owner_id',
         'name',
+        'slug',
         'address',
+        'image',
     ];
 
     public function owner()
     {
         return $this->belongsTo(Pemilik::class, 'owner_id', 'user_id');
+    }
+
+    public function rooms()
+    {
+        return $this->hasMany(Room::class);
     }
 }

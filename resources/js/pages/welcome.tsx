@@ -72,7 +72,7 @@ export default function Welcome({
                                                     <div className="flex flex-wrap gap-2 mt-1">
                                                         {k.rooms.filter((room: any) => room.status === 'tersedia').map((room: any) => (
                                                             <span key={room.id} className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded dark:bg-green-900 dark:text-green-200">
-                                                                {room.room_number} - Rp{room.monthly_rate.toLocaleString()}
+                                                                Rp{room.monthly_rate.toLocaleString()}
                                                             </span>
                                                         ))}
                                                     </div>
