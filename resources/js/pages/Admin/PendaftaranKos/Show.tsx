@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Copy, Key } from 'lucide-react';
+import { Copy, FileText, Key } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -234,10 +234,35 @@ export default function Show({ pendaftaranKos, availableRooms, generatedCredenti
                             <div>
                                 <Label>File KTP</Label>
                                 {pendaftaranKos.file_path_ktp ? (
-                                    <a href={`/storage/${pendaftaranKos.file_path_ktp}`} target="_blank" rel="noopener noreferrer"
-                                        className="mt-1 inline-block text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
-                                        Lihat KTP
-                                    </a>
+                                    <div className="mt-2 overflow-hidden rounded-lg border bg-gray-50 shadow-sm transition-shadow hover:shadow-md">
+                                        {pendaftaranKos.file_path_ktp.toLowerCase().endsWith('.pdf') ? (
+                                            <div className="flex flex-col items-center justify-center bg-gray-100 p-4 text-center">
+                                                <FileText className="mb-2 h-8 w-8 text-gray-400" />
+                                                <p className="mb-2 text-xs font-medium text-gray-600">Dokumen PDF</p>
+                                                <Button variant="outline" size="sm" asChild>
+                                                    <a href={`/storage/${pendaftaranKos.file_path_ktp}`} target="_blank" rel="noopener noreferrer">
+                                                        Buka KTP
+                                                    </a>
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <a
+                                                href={`/storage/${pendaftaranKos.file_path_ktp}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="group relative block"
+                                            >
+                                                <img
+                                                    src={`/storage/${pendaftaranKos.file_path_ktp}`}
+                                                    alt="KTP"
+                                                    className="h-32 w-full object-cover object-center"
+                                                />
+                                                <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-xs font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
+                                                    Lihat KTP
+                                                </div>
+                                            </a>
+                                        )}
+                                    </div>
                                 ) : (
                                     <p className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">Tidak ada file</p>
                                 )}
@@ -245,10 +270,35 @@ export default function Show({ pendaftaranKos, availableRooms, generatedCredenti
                             <div>
                                 <Label>File KK</Label>
                                 {pendaftaranKos.file_path_kk ? (
-                                    <a href={`/storage/${pendaftaranKos.file_path_kk}`} target="_blank" rel="noopener noreferrer"
-                                        className="mt-1 inline-block text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
-                                        Lihat KK
-                                    </a>
+                                    <div className="mt-2 overflow-hidden rounded-lg border bg-gray-50 shadow-sm transition-shadow hover:shadow-md">
+                                        {pendaftaranKos.file_path_kk.toLowerCase().endsWith('.pdf') ? (
+                                            <div className="flex flex-col items-center justify-center bg-gray-100 p-4 text-center">
+                                                <FileText className="mb-2 h-8 w-8 text-gray-400" />
+                                                <p className="mb-2 text-xs font-medium text-gray-600">Dokumen PDF</p>
+                                                <Button variant="outline" size="sm" asChild>
+                                                    <a href={`/storage/${pendaftaranKos.file_path_kk}`} target="_blank" rel="noopener noreferrer">
+                                                        Buka KK
+                                                    </a>
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <a
+                                                href={`/storage/${pendaftaranKos.file_path_kk}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="group relative block"
+                                            >
+                                                <img
+                                                    src={`/storage/${pendaftaranKos.file_path_kk}`}
+                                                    alt="KK"
+                                                    className="h-32 w-full object-cover object-center"
+                                                />
+                                                <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-xs font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
+                                                    Lihat KK
+                                                </div>
+                                            </a>
+                                        )}
+                                    </div>
                                 ) : (
                                     <p className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">Tidak ada file</p>
                                 )}

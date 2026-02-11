@@ -476,21 +476,43 @@ export default function Index({ penghuni, users }: Props) {
                                             Kartu Keluarga (KK)
                                         </h4>
                                         {selectedPenghuni.file_path_kk ? (
-                                            <div className="rounded-lg border bg-gray-50 p-2 text-center">
-                                                <Button variant="outline" size="sm" asChild>
+                                            <div className="rounded-lg border bg-gray-50 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                                                {selectedPenghuni.file_path_kk.toLowerCase().endsWith('.pdf') ? (
+                                                    <div className="flex h-48 flex-col items-center justify-center bg-gray-100 p-8 text-center">
+                                                        <FileText className="mb-2 h-10 w-10 text-gray-400" />
+                                                        <p className="mb-3 text-sm font-medium text-gray-600">Dokumen PDF</p>
+                                                        <Button variant="outline" size="sm" asChild>
+                                                            <a
+                                                                href={getImageUrl(selectedPenghuni.file_path_kk)!}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                            >
+                                                                Buka PDF
+                                                            </a>
+                                                        </Button>
+                                                    </div>
+                                                ) : (
                                                     <a
                                                         href={getImageUrl(selectedPenghuni.file_path_kk)!}
                                                         target="_blank"
                                                         rel="noreferrer"
+                                                        className="group relative block"
                                                     >
-                                                        <FileText className="mr-2 h-4 w-4" />
-                                                        Buka File KK
+                                                        <img
+                                                            src={getImageUrl(selectedPenghuni.file_path_kk)!}
+                                                            alt="KK"
+                                                            className="h-48 w-full object-cover object-center"
+                                                        />
+                                                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
+                                                            Lihat Gambar Penuh
+                                                        </div>
                                                     </a>
-                                                </Button>
+                                                )}
                                             </div>
                                         ) : (
-                                            <div className="flex h-24 items-center justify-center rounded border border-dashed text-gray-400">
-                                                Tidak ada file
+                                            <div className="flex h-48 flex-col items-center justify-center rounded border border-dashed bg-gray-50/50 text-gray-500">
+                                                <span className="mb-2 text-2xl">🚫</span>
+                                                <span className="text-sm">Tidak ada file KK</span>
                                             </div>
                                         )}
                                     </div>
@@ -499,21 +521,43 @@ export default function Index({ penghuni, users }: Props) {
                                             KTP
                                         </h4>
                                         {selectedPenghuni.file_path_ktp ? (
-                                            <div className="rounded-lg border bg-gray-50 p-2 text-center">
-                                                <Button variant="outline" size="sm" asChild>
+                                            <div className="rounded-lg border bg-gray-50 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                                                {selectedPenghuni.file_path_ktp.toLowerCase().endsWith('.pdf') ? (
+                                                    <div className="flex h-48 flex-col items-center justify-center bg-gray-100 p-8 text-center">
+                                                        <FileText className="mb-2 h-10 w-10 text-gray-400" />
+                                                        <p className="mb-3 text-sm font-medium text-gray-600">Dokumen PDF</p>
+                                                        <Button variant="outline" size="sm" asChild>
+                                                            <a
+                                                                href={getImageUrl(selectedPenghuni.file_path_ktp)!}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                            >
+                                                                Buka PDF
+                                                            </a>
+                                                        </Button>
+                                                    </div>
+                                                ) : (
                                                     <a
                                                         href={getImageUrl(selectedPenghuni.file_path_ktp)!}
                                                         target="_blank"
                                                         rel="noreferrer"
+                                                        className="group relative block"
                                                     >
-                                                        <FileText className="mr-2 h-4 w-4" />
-                                                        Buka File KTP
+                                                        <img
+                                                            src={getImageUrl(selectedPenghuni.file_path_ktp)!}
+                                                            alt="KTP"
+                                                            className="h-48 w-full object-cover object-center"
+                                                        />
+                                                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
+                                                            Lihat Gambar Penuh
+                                                        </div>
                                                     </a>
-                                                </Button>
+                                                )}
                                             </div>
                                         ) : (
-                                            <div className="flex h-24 items-center justify-center rounded border border-dashed text-gray-400">
-                                                Tidak ada file
+                                            <div className="flex h-48 flex-col items-center justify-center rounded border border-dashed bg-gray-50/50 text-gray-500">
+                                                <span className="mb-2 text-2xl">🚫</span>
+                                                <span className="text-sm">Tidak ada file KTP</span>
                                             </div>
                                         )}
                                     </div>

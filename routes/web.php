@@ -11,6 +11,12 @@ use App\Http\Controllers\PenghuniDashboardController;
 use App\Http\Controllers\PenghuniTagihanController;
 use App\Http\Controllers\PublicPendaftaranKosController;
 use App\Models\Kos;
+use App\Models\Room;
+use App\Models\Penyewaan;
+use App\Models\Payment;
+use App\Models\Invoice;
+use App\Models\Penghuni;
+use App\Models\Pemilik;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -29,13 +35,48 @@ Route::post('pendaftaran-kos', [PublicPendaftaranKosController::class, 'store'])
 Route::get('pendaftaran-kos/sukses/{id}', [PublicPendaftaranKosController::class, 'success'])->name('public.pendaftaran-kos.sukses');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    // Dashboard — route berdasarkan role
     Route::get('dashboard', function () {
         $user = auth()->user();
         if ($user->role && $user->role->name === 'penghuni') {
             return app(PenghuniDashboardController::class)->index(request());
         }
-        return Inertia::render('dashboard');
+
+        $pemilik = Pemilik::where('user_id', $user->id)->first();
+
+        if ($user->role && $user->role->name === 'pemilik' && $pemilik) {
+            $kosIds = Kos::where('owner_id', $pemilik->user_id)->pluck('id');
+            $roomIds = Room::whereIn('kos_id', $kosIds)->pluck('id');
+            $penyewaanIds = Penyewaan::whereIn('room_id', $roomIds)->pluck('id');
+
+            $totalPenghuni = Penyewaan::whereIn('room_id', $roomIds)->where('status', 'aktif')->count();
+            $jumlahKos = $kosIds->count();
+            $totalKamar = $roomIds->count();
+            $totalPendapatan = Payment::whereIn('invoice_id', 
+                Invoice::whereIn('tenancy_id', $penyewaanIds)->pluck('id')
+            )->where('status', 'sukses')->sum('amount_paid');
+            $latestPenghuni = Penghuni::whereIn('user_id', 
+                Penyewaan::whereIn('room_id', $roomIds)->pluck('penghuni_id')
+            )->with('user')->latest('created_at')->take(5)->get();
+            $latestPayments = Payment::whereIn('invoice_id',
+                Invoice::whereIn('tenancy_id', $penyewaanIds)->pluck('id')
+            )->latest('payment_date')->take(5)->get();
+        } else {
+            $totalPenghuni = Penghuni::count();
+            $jumlahKos = Kos::count();
+            $totalKamar = Room::count();
+            $totalPendapatan = Payment::where('status', 'sukses')->sum('amount_paid');
+            $latestPenghuni = Penghuni::with('user')->latest('created_at')->take(5)->get();
+            $latestPayments = Payment::latest('payment_date')->take(5)->get();
+        }
+
+        return Inertia::render('dashboard', [
+            'totalPenghuni' => $totalPenghuni,
+            'jumlahKos' => $jumlahKos,
+            'totalKamar' => $totalKamar,
+            'totalPendapatan' => $totalPendapatan,
+            'latestPenghuni' => $latestPenghuni,
+            'latestPayments' => $latestPayments,
+        ]);
     })->name('dashboard');
 
     // Penghuni routes

@@ -30,12 +30,10 @@ class AdminPendaftaranKosController extends Controller
     {
         $pendaftaranKos->load(['kos.rooms', 'assignedRoom']);
 
-        // Ambil daftar kamar tersedia di kos terkait
         $availableRooms = Room::where('kos_id', $pendaftaranKos->kos_id)
             ->where('status', 'tersedia')
             ->get(['id', 'room_number', 'monthly_rate', 'status']);
 
-        // Ambil credentials dari session flash (jika baru saja approve)
         $generatedCredentials = session('generated_credentials');
 
         return Inertia::render('Admin/PendaftaranKos/Show', [
@@ -52,7 +50,6 @@ class AdminPendaftaranKosController extends Controller
             'notes' => 'nullable|string',
         ];
 
-        // Jika diterima, wajib assign kamar
         if ($request->status === 'diterima') {
             $rules['assigned_room_id'] = 'required|exists:rooms,id';
         }
@@ -60,7 +57,6 @@ class AdminPendaftaranKosController extends Controller
         $request->validate($rules);
 
         return DB::transaction(function () use ($request, $pendaftaranKos) {
-            // Update status pendaftaran
             $pendaftaranKos->update([
                 'status' => $request->status,
                 'notes' => $request->notes,
@@ -70,16 +66,13 @@ class AdminPendaftaranKosController extends Controller
 
             $generatedCredentials = null;
 
-            // Jika DITERIMA: buat user + penghuni + penyewaan + invoice
             if ($request->status === 'diterima') {
                 $room = Room::findOrFail($request->assigned_room_id);
 
-                // 1. Generate credentials
                 $username = Str::slug($pendaftaranKos->nama, '') . rand(100, 999);
-                $email = $username . '@kos.local';
+                $email = $username . '@sikospel.com';
                 $plainPassword = Str::random(8);
 
-                // 2. Buat User
                 $role = Role::where('name', 'penghuni')->first();
                 $user = User::create([
                     'username' => $username,
@@ -88,7 +81,6 @@ class AdminPendaftaranKosController extends Controller
                     'role_id' => $role->id,
                 ]);
 
-                // 3. Buat Penghuni
                 Penghuni::create([
                     'user_id' => $user->id,
                     'name' => $pendaftaranKos->nama,
@@ -99,13 +91,11 @@ class AdminPendaftaranKosController extends Controller
                     'file_path_kk' => $pendaftaranKos->file_path_kk,
                 ]);
 
-                // 4. Update calon_penghuni_id dan simpan password plain di pendaftaran
                 $pendaftaranKos->update([
                     'calon_penghuni_id' => $user->id,
                     'generated_password_plain' => $plainPassword,
                 ]);
 
-                // 5. Buat Penyewaan
                 $startDate = $pendaftaranKos->start_date ?? now()->toDateString();
                 $penyewaan = Penyewaan::create([
                     'penghuni_id' => $user->id,
@@ -114,13 +104,10 @@ class AdminPendaftaranKosController extends Controller
                     'status' => 'aktif',
                 ]);
 
-                // 6. Update status kamar → ditempati
                 $room->update(['status' => 'ditempati']);
 
-                // 7. Buat Invoice bulan pertama
                 $billingPeriod = now()->startOfMonth();
-                $dueDate = now()->startOfMonth()->addDays(9); // Jatuh tempo tanggal 10
-
+                $dueDate = now()->startOfMonth()->addDays(9);
                 Invoice::create([
                     'tenancy_id' => $penyewaan->id,
                     'amount' => $room->monthly_rate,
@@ -129,7 +116,6 @@ class AdminPendaftaranKosController extends Controller
                     'status' => 'belum_dibayar',
                 ]);
 
-                // 8. Simpan credentials di session flash untuk ditampilkan ke admin
                 $generatedCredentials = [
                     'username' => $username,
                     'email' => $email,
