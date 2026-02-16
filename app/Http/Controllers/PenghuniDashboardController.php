@@ -29,7 +29,7 @@ class PenghuniDashboardController extends Controller
         // Ambil penyewaan aktif dengan relasi room dan kos
         $penyewaan = Penyewaan::where('penghuni_id', $penghuni->user_id)
             ->where('status', 'aktif')
-            ->with(['room.kos'])
+            ->with(['room.kos', 'room.typeKamar'])
             ->first();
 
         // Hitung tagihan belum dibayar

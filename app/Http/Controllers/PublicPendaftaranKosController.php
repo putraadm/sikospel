@@ -65,7 +65,7 @@ class PublicPendaftaranKosController extends Controller
 
     public function success($id)
     {
-        $pendaftaran = PendaftaranKos::with(['kos', 'assignedRoom'])->find($id);
+        $pendaftaran = PendaftaranKos::with(['kos', 'assignedRoom.typeKamar'])->find($id);
 
         if (!$pendaftaran) {
             return redirect()->route('home');

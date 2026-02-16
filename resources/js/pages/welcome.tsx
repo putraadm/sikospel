@@ -165,7 +165,7 @@ export default function Welcome({
                                             <div className="flex flex-col">
                                                 <span className="text-[10px] text-neutral-400">Mulai dari</span>
                                                 <span className="text-sm font-bold text-primary dark:text-primary-foreground">
-                                                    Rp {k.rooms[0]?.monthly_rate?.toLocaleString()}<span className="text-[10px] font-normal text-neutral-400">/bln</span>
+                                                    Rp {k.rooms[0]?.type_kamar?.harga?.toLocaleString()}<span className="text-[10px] font-normal text-neutral-400">/bln</span>
                                                 </span>
                                             </div>
                                             <Link href={`/kos/${k.slug}`}>

@@ -108,7 +108,7 @@ export default function Show({ kos }: Props) {
                                                 </div>
                                                 <div className="flex items-center justify-between border-t pt-4 border-neutral-100 dark:border-neutral-800">
                                                     <span className="text-xl font-bold text-primary">
-                                                        Rp {room.monthly_rate.toLocaleString('id-ID')}<span className="text-xs text-gray-400 font-normal">/bulan</span>
+                                                        Rp {Number(room.type_kamar?.harga || 0).toLocaleString('id-ID')}<span className="text-xs text-gray-400 font-normal">/bulan</span>
                                                     </span>
                                                 </div>
                                             </div>

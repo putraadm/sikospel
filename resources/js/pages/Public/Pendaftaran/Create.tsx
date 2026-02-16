@@ -23,7 +23,11 @@ interface FormData {
 interface Room {
     id: number;
     room_number: string;
-    monthly_rate: number;
+    type_kamar?: {
+        id: number;
+        nama: string;
+        harga: number;
+    };
     status: string;
 }
 

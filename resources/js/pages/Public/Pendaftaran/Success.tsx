@@ -11,7 +11,11 @@ interface Props {
         start_date: string;
         assigned_room?: {
             room_number: string;
-            monthly_rate: number;
+            type_kamar?: {
+                id: number;
+                nama: string;
+                harga: number;
+            };
         } | null;
         calon_penghuni?: {
             user_id: number;
@@ -127,7 +131,7 @@ export default function Success({ pendaftaran, generatedUser }: Props) {
                                         </div>
                                         <div>
                                             <p className="text-gray-500 dark:text-gray-400">Harga/Bulan</p>
-                                            <p className="font-medium">Rp{Number(pendaftaran.assigned_room.monthly_rate).toLocaleString()}</p>
+                                            <p className="font-medium">Rp{Number(pendaftaran.assigned_room.type_kamar?.harga || 0).toLocaleString()}</p>
                                         </div>
                                     </>
                                 )}

@@ -26,7 +26,11 @@ interface Kos {
     rooms: {
         id: number;
         room_number: string;
-        monthly_rate: number;
+        type_kamar?: {
+            id: number;
+            nama: string;
+            harga: number;
+        };
         status: string;
     }[];
 }
@@ -106,7 +110,7 @@ export default function Create({ kos }: Props) {
                                             <SelectContent>
                                                 {availableRooms.map((room) => (
                                                     <SelectItem key={room.id} value={room.id.toString()}>
-                                                        Kamar {room.room_number} - Rp{room.monthly_rate.toLocaleString()}
+                                                        Kamar {room.room_number} - Rp{Number(room.type_kamar?.harga || 0).toLocaleString()}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>

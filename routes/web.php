@@ -27,7 +27,8 @@ Route::get('/', function (Request $request) {
     $search = $request->query('search');
     
     $query = Kos::with(['rooms' => function($q) {
-        $q->select('id', 'kos_id', 'room_number', 'monthly_rate', 'status');
+        $q->select('id', 'kos_id', 'room_number', 'type_kamar_id', 'status')
+          ->with('typeKamar');
     }]);
 
     if ($search) {

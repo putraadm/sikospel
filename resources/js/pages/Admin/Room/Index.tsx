@@ -176,14 +176,14 @@ export default function Index({ rooms, kos, typeKamars }: Props) {
             ),
         },
         {
-            accessorKey: 'typeKamar',
+            accessorKey: 'type_kamar',
             header: 'Tipe Kamar',
-            cell: ({ row }) => <div className="font-medium">{row.original.typeKamar?.nama || '-'}</div>,
+            cell: ({ row }) => <div className="font-medium">{row.original.type_kamar?.nama || '-'}</div>,
         },
         {
-            accessorKey: 'typeKamar.harga',
+            accessorKey: 'type_kamar.harga',
             header: 'Harga/Bulan',
-            cell: ({ row }) => <div>Rp{Number(row.original.typeKamar?.harga || 0).toLocaleString('id-ID')}</div>,
+            cell: ({ row }) => <div>Rp{Number(row.original.type_kamar?.harga || 0).toLocaleString('id-ID')}</div>,
         },
         {
             accessorKey: 'status',

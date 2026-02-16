@@ -80,6 +80,6 @@ export interface Room {
     description: string | null;
     image: string | null;
     kos: Kos;
-    typeKamar?: TypeKamar;
+    type_kamar?: TypeKamar;
     images?: { id: number; gambar: string }[];
 }
