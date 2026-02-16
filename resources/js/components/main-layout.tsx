@@ -14,7 +14,7 @@ import {
 } from './ui/dropdown-menu';
 import { UserMenuContent } from './user-menu-content';
 import { useInitials } from '@/hooks/use-initials';
-import { Facebook, Instagram, Twitter, Mail, MapPin, Phone, Search } from 'lucide-react';
+import { ArrowUp, Facebook, Instagram, Twitter, Mail, MapPin, Phone, Search } from 'lucide-react';
 
 interface Props {
     children: ReactNode;
@@ -54,7 +54,7 @@ export default function MainLayout({ children, breadcrumbs = [] }: Props) {
                             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
                             <Input
                                 type="text"
-                                placeholder="Cari lokasi atau nama kos..."
+                                placeholder="Cari kos..."
                                 className="h-9 w-64 pl-9 text-sm bg-neutral-50 dark:bg-neutral-900 border-none focus-visible:ring-primary/20"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
@@ -102,6 +102,11 @@ export default function MainLayout({ children, breadcrumbs = [] }: Props) {
             <main className="flex-1">
                 {children}
             </main>
+
+            <Button className="fixed bottom-4 right-4" size="icon"
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+                <ArrowUp />
+            </Button>
 
             <footer className="border-t border-neutral-100 bg-white dark:border-neutral-800 dark:bg-black">
                 <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">

@@ -5,14 +5,32 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Search, Home, Shield, Zap, ArrowRight } from 'lucide-react';
 import { type SharedData } from '@/types';
+import { useState, useEffect } from 'react';
 
 export default function Welcome({
-    kos = [],
+    kos: initialKos = [],
     filters = {},
 }: {
     kos?: any[];
     filters?: { search?: string };
 }) {
+    const [kos, setKos] = useState(initialKos);
+
+    useEffect(() => {
+        setKos(initialKos);
+    }, [initialKos]);
+
+    useEffect(() => {
+        const handleSearchResults = (event: CustomEvent) => {
+            setKos(event.detail);
+        };
+
+        window.addEventListener('searchResults', handleSearchResults as EventListener);
+
+        return () => {
+            window.removeEventListener('searchResults', handleSearchResults as EventListener);
+        };
+    }, []);
     return (
         <MainLayout>
             <Head title="Beranda" />
@@ -117,16 +135,24 @@ export default function Welcome({
                                             alt={k.name}
                                             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                                         />
-                                        <div className="absolute top-2 left-2 flex gap-2">
-                                            <Badge className="bg-white/90 text-[10px] text-black backdrop-blur-md border-none hover:bg-white h-5 px-2">
-                                                {k.rooms.filter((r: any) => r.status === 'tersedia').length} Kamar
-                                            </Badge>
-                                        </div>
                                     </div>
                                     <CardContent className="p-4">
-                                        <div className="mb-1.5 flex items-center gap-1 text-[10px] font-semibold text-primary uppercase tracking-wider">
-                                            <Home className="size-2.5" />
-                                            <span>Premium Kos</span>
+                                        <div className="mb-1.5 flex items-center justify-between">
+                                            <div className="flex items-center gap-1 text-[10px] font-semibold text-primary uppercase tracking-wider">
+                                                <Home className="size-2.5" />
+                                                <span>Premium Kos</span>
+                                            </div>
+                                            {(() => {
+                                                const availableCount = k.rooms.filter((r: any) => r.status === 'tersedia').length;
+                                                return (
+                                                    <Badge className={`backdrop-blur-sm border-2 h-5 px-2 transition-colors duration-300 ${availableCount === 0
+                                                        ? 'bg-rose-500/10 text-rose-600 border-rose-500/20'
+                                                        : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                                                        }`}>
+                                                        {availableCount} Kamar
+                                                    </Badge>
+                                                );
+                                            })()}
                                         </div>
                                         <h3 className="mb-1 text-base font-bold text-neutral-900 group-hover:text-primary transition-colors dark:text-white dark:group-hover:text-primary/80 line-clamp-1">
                                             {k.name}
