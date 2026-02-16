@@ -6,6 +6,7 @@ use App\Http\Controllers\AdminPemilikController;
 use App\Http\Controllers\AdminPendaftaranKosController;
 use App\Http\Controllers\AdminPenghuniController;
 use App\Http\Controllers\AdminRoleController;
+use App\Http\Controllers\AdminTypeKamarController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\PenghuniDashboardController;
 use App\Http\Controllers\PenghuniTagihanController;
@@ -27,7 +28,8 @@ Route::get('/', function (Request $request) {
     $search = $request->query('search');
     
     $query = Kos::with(['rooms' => function($q) {
-        $q->select('id', 'kos_id', 'room_number', 'monthly_rate', 'status');
+        $q->select('id', 'kos_id', 'room_number', 'type_kamar_id', 'status')
+          ->with(['typeKamar', 'images']);
     }]);
 
     if ($search) {
@@ -117,32 +119,33 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->parameters(['pendaftaran-kos' => 'pendaftaranKos']);
             Route::resource('penghuni', AdminPenghuniController::class);
             Route::resource('kos', AdminKosController::class);
-            Route::resource('type-kamar', \App\Http\Controllers\AdminTypeKamarController::class);
+            Route::resource('type-kamar', AdminTypeKamarController::class);
             Route::resource('room', AdminKamarController::class);
+            Route::delete('room-image/{id}', [AdminKamarController::class, 'deleteImage'])->name('admin.room-image.destroy');
             Route::get('tagihan', function () {
                 return Inertia::render('admin/Tagihan/Index', [
-                    'rooms' => \App\Models\Room::with(['typeKamar', 'kos'])->get(),
-                    'invoices' => \App\Models\Invoice::with(['tenancy.penghuni', 'tenancy.room.kos', 'tenancy.room.typeKamar', 'payments'])->latest()->get(),
+                    'rooms' => Room::with(['typeKamar', 'kos'])->get(),
+                    'invoices' => Invoice::with(['tenancy.penghuni', 'tenancy.room.kos', 'tenancy.room.typeKamar', 'payments'])->latest()->get(),
                 ]);
             });
-            Route::get('tagihan/create', function (\Illuminate\Http\Request $request) {
+            Route::get('tagihan/create', function (Request $request) {
                 $room = null;
                 if ($request->has('room_id')) {
-                    $room = \App\Models\Room::with(['typeKamar', 'kos'])->find($request->room_id);
+                    $room = Room::with(['typeKamar', 'kos'])->find($request->room_id);
                 }
                 return Inertia::render('admin/Tagihan/Create', [
-                    'kos' => \App\Models\Kos::all(),
-                    'rooms' => \App\Models\Room::with(['typeKamar', 'kos'])->get(),
+                    'kos' => Kos::all(),
+                    'rooms' => Room::with(['typeKamar', 'kos'])->get(),
                     'room' => $room,
                 ]);
             });
-            Route::post('tagihan', function (\Illuminate\Http\Request $request) {
+            Route::post('tagihan', function (Request $request) {
                 $request->validate([
                     'room_id' => 'required|exists:rooms,id',
                     'billing_date' => 'required|integer|min:1|max:31',
                 ]);
 
-                $room = \App\Models\Room::findOrFail($request->room_id);
+                $room = Room::findOrFail($request->room_id);
                 $room->update([
                     'billing_date' => $request->billing_date,
                 ]);

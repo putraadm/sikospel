@@ -2,6 +2,7 @@ import MainLayout from '@/components/main-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Carousel, CarouselContent, CarouselDots, CarouselItem } from '@/components/ui/carousel';
 import { BreadcrumbItem, Kos, Room } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import { MapPin, User, Phone, Home, CheckCircle2, XCircle, Info } from 'lucide-react';
@@ -75,9 +76,26 @@ export default function Show({ kos }: Props) {
                                 {kos.rooms && kos.rooms.length > 0 ? (
                                     kos.rooms.map((room) => (
                                         <Card key={room.id} className={`flex flex-col overflow-hidden border-none shadow-sm transition-all hover:shadow-md ${room.status !== 'tersedia' ? 'opacity-70 grayscale-[0.5]' : ''}`}>
-                                            <div className="h-48 overflow-hidden shrink-0">
-                                                {room.image ? (
-                                                    <img src={`/storage/${room.image}`} alt={room.room_number} className="w-full h-full object-cover transition-transform hover:scale-105 duration-300" />
+                                            <div className="h-48 overflow-hidden shrink-0 relative group">
+                                                {room.images && room.images.length > 0 ? (
+                                                    <Carousel className="w-full h-full">
+                                                        <CarouselContent className="h-48">
+                                                            {room.images.map((img, idx) => (
+                                                                <CarouselItem key={img.id} className="h-full">
+                                                                    <img
+                                                                        src={`/storage/${img.gambar}`}
+                                                                        alt={`${room.room_number} - ${idx + 1}`}
+                                                                        className="w-full h-full object-contain"
+                                                                    />
+                                                                </CarouselItem>
+                                                            ))}
+                                                        </CarouselContent>
+                                                        {room.images.length > 1 && (
+                                                            <div className="absolute bottom-2 left-0 right-0">
+                                                                <CarouselDots />
+                                                            </div>
+                                                        )}
+                                                    </Carousel>
                                                 ) : (
                                                     <div className="w-full h-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-400">
                                                         No Image
@@ -103,12 +121,12 @@ export default function Show({ kos }: Props) {
                                                         )}
                                                     </div>
                                                     <p className="text-sm text-[#706f6c] dark:text-[#A1A09A] line-clamp-2">
-                                                        {room.description || 'No description available.'}
+                                                        {room.type_kamar?.deskripsi || 'No description available.'}
                                                     </p>
                                                 </div>
                                                 <div className="flex items-center justify-between border-t pt-4 border-neutral-100 dark:border-neutral-800">
                                                     <span className="text-xl font-bold text-primary">
-                                                        Rp {room.monthly_rate.toLocaleString('id-ID')}<span className="text-xs text-gray-400 font-normal">/bulan</span>
+                                                        Rp {Number(room.type_kamar?.harga || 0).toLocaleString('id-ID')}<span className="text-xs text-gray-400 font-normal">/bulan</span>
                                                     </span>
                                                 </div>
                                             </div>

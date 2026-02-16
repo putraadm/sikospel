@@ -68,6 +68,7 @@ export interface Kos {
 export interface TypeKamar {
     id: number;
     nama: string;
+    deskripsi: string | null;
     harga: number;
 }
 
@@ -80,6 +81,6 @@ export interface Room {
     description: string | null;
     image: string | null;
     kos: Kos;
-    typeKamar?: TypeKamar;
+    type_kamar?: TypeKamar;
     images?: { id: number; gambar: string }[];
 }

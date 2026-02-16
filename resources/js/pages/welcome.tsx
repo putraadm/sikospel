@@ -49,13 +49,13 @@ export default function Welcome({
                             Cari kos dengan fasilitas lengkap, lokasi strategis, dan proses pendaftaran yang transparan hanya di SIKOSPEL.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4">
-                            <Link href="/pendaftaran-kos">
+                            <Link href="#">
                                 <Button size="lg" className="h-12 px-8 bg-primary hover:bg-primary/90 text-white border-none shadow-lg transition-all hover:shadow-xl">
                                     Cari Kos Sekarang
                                     <ArrowRight className="ml-2 size-4" />
                                 </Button>
                             </Link>
-                            <Link href="/pendaftaran-kos">
+                            <Link href="#">
                                 <Button variant="outline" size="lg" className="h-12 px-8 border-neutral-200 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900">
                                     Daftarkan Properti Anda
                                 </Button>
@@ -131,7 +131,7 @@ export default function Welcome({
                                 <Card key={k.id} className="group overflow-hidden border-neutral-100 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl dark:border-neutral-800 dark:bg-[#161615]">
                                     <div className="relative aspect-[4/3] overflow-hidden">
                                         <img
-                                            src={`/storage/${k.image}`}
+                                            src={`/storage/${k.rooms[0]?.images?.[0]?.gambar}`}
                                             alt={k.name}
                                             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                                         />
@@ -165,7 +165,7 @@ export default function Welcome({
                                             <div className="flex flex-col">
                                                 <span className="text-[10px] text-neutral-400">Mulai dari</span>
                                                 <span className="text-sm font-bold text-primary dark:text-primary-foreground">
-                                                    Rp {k.rooms[0]?.monthly_rate?.toLocaleString()}<span className="text-[10px] font-normal text-neutral-400">/bln</span>
+                                                    Rp {k.rooms[0]?.type_kamar?.harga?.toLocaleString()}<span className="text-[10px] font-normal text-neutral-400">/bln</span>
                                                 </span>
                                             </div>
                                             <Link href={`/kos/${k.slug}`}>

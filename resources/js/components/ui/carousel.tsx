@@ -216,9 +216,8 @@ function CarouselDots({ className, hideIfOne, ...props }: React.ComponentProps<t
                         key={index}
                         // data-slot="carousel-next"
                         className={cn(
-                            'size-4 rounded-full border-2 transition-colors',
-                            // orientation === 'horizontal' ? 'top-1/2 -right-12 -translate-y-1/2' : '-bottom-12 left-1/2 -translate-x-1/2 rotate-90',
-                            index == selectedIndex ? 'border-primary' : 'border-primary/50 hover:border-primary/75',
+                            'size-2.5 rounded-full border-2 transition-colors',
+                            index === selectedIndex ? 'bg-white border-white' : 'bg-transparent border-white/50 hover:border-white/75',
                             className,
                         )}
                         onClick={() => {

@@ -10,7 +10,7 @@ class PublicKosController extends Controller
 {
     public function show($slug)
     {
-        $kos = Kos::with(['owner.user', 'rooms'])
+        $kos = Kos::with(['owner.user', 'rooms.images', 'rooms.typeKamar'])
             ->where('slug', $slug)
             ->firstOrFail();
 
