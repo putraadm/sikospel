@@ -26,7 +26,9 @@ interface PendaftaranKos {
     };
     assigned_room?: {
         room_number: string;
-        monthly_rate: number;
+        type_kamar?: {
+            harga: number;
+        };
     };
     created_at: string;
 }
@@ -78,7 +80,7 @@ export default function Index({ pendaftaranKos }: Props) {
                 return room ? (
                     <div>
                         <div className="font-medium">Kamar {room.room_number}</div>
-                        <div className="text-sm text-muted-foreground">Rp{Number(room.monthly_rate).toLocaleString()}</div>
+                        <div className="text-sm text-muted-foreground">Rp{Number(room.type_kamar?.harga || 0).toLocaleString()}</div>
                     </div>
                 ) : (
                     <span className="text-muted-foreground">Belum ditentukan</span>

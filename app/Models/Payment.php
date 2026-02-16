@@ -14,6 +14,7 @@ class Payment extends Model
         'sumber',
         'transaction_id',
         'status',
+        'bukti_pembayaran',
     ];
 
     protected $casts = [

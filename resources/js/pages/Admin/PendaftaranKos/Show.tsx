@@ -14,11 +14,17 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Detail Pendaftaran', href: '#' },
 ];
 
+interface TypeKamar {
+    id: number;
+    nama: string;
+    harga: number;
+}
+
 interface Room {
     id: number;
     room_number: string;
-    monthly_rate: number;
     status: string;
+    type_kamar?: TypeKamar;
 }
 
 interface PendaftaranKos {
@@ -39,8 +45,8 @@ interface PendaftaranKos {
     } | null;
     assigned_room?: {
         room_number: string;
-        monthly_rate: number;
         status: string;
+        type_kamar?: TypeKamar;
     };
     created_at: string;
     verified_at: string | null;
@@ -199,7 +205,9 @@ export default function Show({ pendaftaranKos, availableRooms, generatedCredenti
                                     <div className="mt-1">
                                         <p className="text-sm font-medium">Kamar {pendaftaranKos.assigned_room.room_number}</p>
                                         <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                            Rp{Number(pendaftaranKos.assigned_room.monthly_rate).toLocaleString()} / bulan
+                                            {pendaftaranKos.assigned_room.type_kamar
+                                                ? `${pendaftaranKos.assigned_room.type_kamar.nama} - Rp${Number(pendaftaranKos.assigned_room.type_kamar.harga).toLocaleString()} / bulan`
+                                                : 'Rp - / bulan'}
                                         </p>
                                     </div>
                                 </div>
@@ -339,7 +347,7 @@ export default function Show({ pendaftaranKos, availableRooms, generatedCredenti
                                             {availableRooms.length > 0 ? (
                                                 availableRooms.map((room) => (
                                                     <SelectItem key={room.id} value={room.id.toString()}>
-                                                        Kamar {room.room_number} — Rp{Number(room.monthly_rate).toLocaleString()}/bulan
+                                                        Kamar {room.room_number} — {room.type_kamar ? `${room.type_kamar.nama} (Rp${Number(room.type_kamar.harga).toLocaleString()})` : 'Harga belum diatur'}
                                                     </SelectItem>
                                                 ))
                                             ) : (

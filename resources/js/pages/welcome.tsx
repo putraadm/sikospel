@@ -70,9 +70,15 @@ export default function Welcome({
                                                 <div className="mt-2">
                                                     <p className="text-sm font-medium">Kamar Tersedia:</p>
                                                     <div className="flex flex-wrap gap-2 mt-1">
-                                                        {k.rooms.filter((room: any) => room.status === 'tersedia').map((room: any) => (
+                                                        {k.rooms && k.rooms.filter((room: any) => room.status === 'tersedia').map((room: any) => (
                                                             <span key={room.id} className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded dark:bg-green-900 dark:text-green-200">
-                                                                Rp{room.monthly_rate.toLocaleString()}
+                                                                {room.type_kamar ? (
+                                                                    <>
+                                                                        {room.type_kamar.nama} - Rp{Number(room.type_kamar.harga).toLocaleString('id-ID')}
+                                                                    </>
+                                                                ) : (
+                                                                    <>Tipe belum diatur</>
+                                                                )}
                                                             </span>
                                                         ))}
                                                     </div>

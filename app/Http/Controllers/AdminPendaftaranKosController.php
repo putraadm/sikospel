@@ -19,7 +19,7 @@ class AdminPendaftaranKosController extends Controller
 {
     public function index()
     {
-        $pendaftaranKos = PendaftaranKos::with(['kos', 'assignedRoom'])->get();
+        $pendaftaranKos = PendaftaranKos::with(['kos', 'assignedRoom.typeKamar'])->get();
 
         return Inertia::render('Admin/PendaftaranKos/Index', [
             'pendaftaranKos' => $pendaftaranKos,
@@ -28,11 +28,12 @@ class AdminPendaftaranKosController extends Controller
 
     public function show(PendaftaranKos $pendaftaranKos)
     {
-        $pendaftaranKos->load(['kos.rooms', 'assignedRoom']);
+        $pendaftaranKos->load(['kos.rooms.typeKamar', 'assignedRoom.typeKamar']);
 
         $availableRooms = Room::where('kos_id', $pendaftaranKos->kos_id)
+            ->with('typeKamar')
             ->where('status', 'tersedia')
-            ->get(['id', 'room_number', 'monthly_rate', 'status']);
+            ->get();
 
         $generatedCredentials = session('generated_credentials');
 
@@ -106,11 +107,14 @@ class AdminPendaftaranKosController extends Controller
 
                 $room->update(['status' => 'ditempati']);
 
+                $room->load('typeKamar');
+                $monthlyRate = $room->typeKamar ? $room->typeKamar->harga : 0;
+                
                 $billingPeriod = now()->startOfMonth();
                 $dueDate = now()->startOfMonth()->addDays(9);
                 Invoice::create([
                     'tenancy_id' => $penyewaan->id,
-                    'amount' => $room->monthly_rate,
+                    'amount' => $monthlyRate,
                     'due_date' => $dueDate,
                     'billing_period' => $billingPeriod,
                     'status' => 'belum_dibayar',

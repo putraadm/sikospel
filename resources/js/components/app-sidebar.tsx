@@ -51,6 +51,11 @@ const adminNavItems: NavItem[] = [
         icon: BedDouble,
     },
     {
+        title: 'Tipe Kamar',
+        href: '/admin/type-kamar',
+        icon: BedDouble,
+    },
+    {
         title: 'Pendaftar',
         href: '/admin/pendaftaran-kos',
         icon: FileText,
@@ -59,6 +64,11 @@ const adminNavItems: NavItem[] = [
         title: 'Penghuni',
         href: '/admin/penghuni',
         icon: Users,
+    },
+    {
+        title: 'Tagihan',
+        href: '/admin/tagihan',
+        icon: CreditCard,
     },
 ];
 
@@ -90,7 +100,7 @@ export function AppSidebar() {
         return adminNavItems.filter(item => {
             if (roleName === 'superadmin') return true;
             if (roleName === 'pemilik') {
-                return ['Dashboard', 'Pendaftar', 'Penghuni', 'Kos', 'Room'].includes(item.title);
+                return ['Dashboard', 'Pendaftar', 'Penghuni', 'Kos', 'Room', 'Tagihan', 'Tipe Kamar'].includes(item.title);
             }
             return false;
         });

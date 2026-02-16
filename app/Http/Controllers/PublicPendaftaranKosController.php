@@ -15,7 +15,7 @@ class PublicPendaftaranKosController extends Controller
     {
         $kosId = $request->query('kos_id');
         $kos = Kos::with(['rooms' => function ($q) {
-            $q->select('id', 'kos_id', 'room_number', 'monthly_rate', 'status');
+            $q->with('typeKamar')->select('id', 'kos_id', 'room_number', 'type_kamar_id', 'status');
         }])->get();
         $selectedKos = $kosId ? Kos::find($kosId) : null;
 

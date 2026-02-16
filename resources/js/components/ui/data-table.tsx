@@ -39,7 +39,7 @@ export function DataTable<TData, TValue>({
   getRowClassName,
 }: DataTableProps<TData, TValue> & {
   leftHeaderAction?: React.ReactNode;
-  headerAction: React.ReactNode;
+  headerAction?: React.ReactNode;
   getRowClassName?: (row: Row<TData>) => string;
 }) {
   const [globalFilter, setGlobalFilter] = useState([]);

@@ -22,7 +22,7 @@ use Inertia\Inertia;
 use Laravel\Fortify\Features;
 
 Route::get('/', function () {
-    $kos = Kos::with('rooms')->get();
+    $kos = Kos::with('rooms.typeKamar')->get();
 
     return Inertia::render('welcome', [
         'canRegister' => Features::enabled(Features::registration()),
@@ -98,7 +98,38 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->parameters(['pendaftaran-kos' => 'pendaftaranKos']);
             Route::resource('penghuni', AdminPenghuniController::class);
             Route::resource('kos', AdminKosController::class);
+            Route::resource('type-kamar', \App\Http\Controllers\AdminTypeKamarController::class);
             Route::resource('room', AdminKamarController::class);
+            Route::get('tagihan', function () {
+                return Inertia::render('admin/Tagihan/Index', [
+                    'rooms' => \App\Models\Room::with(['typeKamar', 'kos'])->get(),
+                    'invoices' => \App\Models\Invoice::with(['tenancy.penghuni', 'tenancy.room.kos', 'tenancy.room.typeKamar', 'payments'])->latest()->get(),
+                ]);
+            });
+            Route::get('tagihan/create', function (\Illuminate\Http\Request $request) {
+                $room = null;
+                if ($request->has('room_id')) {
+                    $room = \App\Models\Room::with(['typeKamar', 'kos'])->find($request->room_id);
+                }
+                return Inertia::render('admin/Tagihan/Create', [
+                    'kos' => \App\Models\Kos::all(),
+                    'rooms' => \App\Models\Room::with(['typeKamar', 'kos'])->get(),
+                    'room' => $room,
+                ]);
+            });
+            Route::post('tagihan', function (\Illuminate\Http\Request $request) {
+                $request->validate([
+                    'room_id' => 'required|exists:rooms,id',
+                    'billing_date' => 'required|integer|min:1|max:31',
+                ]);
+
+                $room = \App\Models\Room::findOrFail($request->room_id);
+                $room->update([
+                    'billing_date' => $request->billing_date,
+                ]);
+
+                return redirect()->route('admin.tagihan.index')->with('success', 'Pengaturan tagihan berhasil disimpan.');
+            })->name('admin.tagihan.index');
         });
     });
 });
