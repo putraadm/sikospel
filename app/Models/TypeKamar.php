@@ -18,4 +18,9 @@ class TypeKamar extends Model
     {
         return $this->hasMany(Room::class, 'type_kamar_id', 'id');
     }
+
+    public function images()
+    {
+        return $this->hasMany(RoomImage::class, 'type_kamar_id', 'id');
+    }
 }

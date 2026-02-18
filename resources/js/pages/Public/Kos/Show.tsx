@@ -69,54 +69,67 @@ export default function Show({ kos }: Props) {
                         <div className="space-y-4">
                             <h2 className="text-2xl font-bold flex items-center">
                                 <Home className="w-6 h-6 mr-2 text-primary" />
-                                Daftar Kamar
+                                Tipe Kamar
                             </h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {kos.rooms && kos.rooms.length > 0 ? (
-                                    kos.rooms.map((room) => (
-                                        <Card key={room.id} className={`flex flex-col overflow-hidden border-none shadow-sm transition-all hover:shadow-md ${room.status !== 'tersedia' ? 'opacity-70 grayscale-[0.5]' : ''}`}>
-                                            <div className="h-48 overflow-hidden shrink-0">
-                                                {room.image ? (
-                                                    <img src={`/storage/${room.image}`} alt={room.room_number} className="w-full h-full object-cover transition-transform hover:scale-105 duration-300" />
-                                                ) : (
-                                                    <div className="w-full h-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-400">
-                                                        No Image
+                                {(() => {
+                                    // Group rooms by type_kamar_id to display unique types
+                                    const uniqueTypes = new Map();
+                                    kos.rooms?.forEach(room => {
+                                        if (room.type_kamar && !uniqueTypes.has(room.type_kamar_id)) {
+                                            uniqueTypes.set(room.type_kamar_id, {
+                                                ...room.type_kamar,
+                                                availableCount: 0,
+                                                totalCount: 0
+                                            });
+                                        }
+                                        if (room.type_kamar) {
+                                            const type = uniqueTypes.get(room.type_kamar_id);
+                                            type.totalCount++;
+                                            if (room.status === 'tersedia') {
+                                                type.availableCount++;
+                                            }
+                                        }
+                                    });
+
+                                    const types = Array.from(uniqueTypes.values());
+
+                                    return types.length > 0 ? (
+                                        types.map((type) => (
+                                            <Card key={type.id} className="flex flex-col overflow-hidden border-none shadow-sm transition-all hover:shadow-md">
+                                                <div className="h-48 overflow-hidden shrink-0 relative">
+                                                    {type.images && type.images.length > 0 ? (
+                                                        <img src={`/storage/${type.images[0].gambar}`} alt={type.nama} className="w-full h-full object-cover transition-transform hover:scale-105 duration-300" />
+                                                    ) : (
+                                                        <div className="w-full h-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-400">
+                                                            No Image
+                                                        </div>
+                                                    )}
+                                                    <div className="absolute top-2 right-2">
+                                                        <Badge variant={type.availableCount > 0 ? "default" : "secondary"} className={type.availableCount > 0 ? "bg-green-600 hover:bg-green-700" : ""}>
+                                                            {type.availableCount} Tersedia
+                                                        </Badge>
                                                     </div>
-                                                )}
-                                            </div>
-                                            <div className="p-5 flex-grow flex flex-col justify-between gap-4 bg-white dark:bg-[#161615]">
-                                                <div className="space-y-2">
-                                                    <div className="flex items-center justify-between gap-2">
-                                                        <span className="text-lg font-bold">Kamar {room.room_number}</span>
-                                                        {room.status === 'tersedia' ? (
-                                                            <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 flex items-center gap-1">
-                                                                <CheckCircle2 className="w-3 h-3" /> Tersedia
-                                                            </Badge>
-                                                        ) : room.status === 'ditempati' ? (
-                                                            <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50 flex items-center gap-1">
-                                                                <User className="w-3 h-3" /> Ditempati
-                                                            </Badge>
-                                                        ) : (
-                                                            <Badge variant="outline" className="text-gray-500 border-gray-200 bg-gray-50 flex items-center gap-1">
-                                                                <XCircle className="w-3 h-3" /> {room.status}
-                                                            </Badge>
-                                                        )}
+                                                </div>
+                                                <div className="p-5 flex-grow flex flex-col justify-between gap-4 bg-white dark:bg-[#161615]">
+                                                    <div className="space-y-2">
+                                                        <h3 className="text-xl font-bold">{type.nama}</h3>
+                                                        <p className="text-sm text-[#706f6c] dark:text-[#A1A09A] line-clamp-2">
+                                                            {type.deskripsi || 'Fasilitas lengkap untuk kenyamanan Anda.'}
+                                                        </p>
                                                     </div>
-                                                    <p className="text-sm text-[#706f6c] dark:text-[#A1A09A] line-clamp-2">
-                                                        {room.description || 'No description available.'}
-                                                    </p>
+                                                    <div className="flex items-center justify-between border-t pt-4 border-neutral-100 dark:border-neutral-800">
+                                                        <span className="text-xl font-bold text-primary">
+                                                            Rp {Number(type.harga || 0).toLocaleString('id-ID')}<span className="text-xs text-gray-400 font-normal">/bulan</span>
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                                <div className="flex items-center justify-between border-t pt-4 border-neutral-100 dark:border-neutral-800">
-                                                    <span className="text-xl font-bold text-primary">
-                                                        Rp {Number(room.type_kamar?.harga || 0).toLocaleString('id-ID')}<span className="text-xs text-gray-400 font-normal">/bulan</span>
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </Card>
-                                    ))
-                                ) : (
-                                    <p className="text-center py-10 text-gray-500 border-2 border-dashed rounded-xl col-span-full w-full">Belum ada data kamar tersedia.</p>
-                                )}
+                                            </Card>
+                                        ))
+                                    ) : (
+                                        <p className="text-center py-10 text-gray-500 border-2 border-dashed rounded-xl col-span-full w-full">Belum ada tipe kamar yang tersedia.</p>
+                                    );
+                                })()}
                             </div>
                         </div>
                     </div>

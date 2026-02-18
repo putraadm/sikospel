@@ -38,55 +38,64 @@ export default function MainLayout({ children, breadcrumbs = [] }: Props) {
 
     return (
         <div className="flex min-h-screen flex-col bg-[#FDFDFC] dark:bg-[#0A0A0A]">
-            <header className="sticky top-0 z-50 w-full border-b border-neutral-100 bg-white/80 backdrop-blur-md dark:border-neutral-800 dark:bg-black/80">
-                <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center gap-8">
-                        <Link href="/" className="flex items-center gap-2">
+            <header className="sticky top-0 z-50 w-full border-b border-primary/10 bg-[#fdfaf8]/80 backdrop-blur-xl dark:border-primary/20 dark:bg-[#0a0908]/80">
+                <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-center gap-10">
+                        <Link href="/" className="flex items-center gap-2 group transition-all hover:opacity-90">
                             <AppLogo />
                         </Link>
-                        {/* <nav className="hidden md:flex items-center gap-6">
-                            <Link href="/" className="text-sm font-medium text-neutral-600 hover:text-black dark:text-neutral-400 dark:hover:text-white transition-colors">Beranda</Link>
-                        </nav> */}
                     </div>
 
-                    <div className="flex items-center gap-4">
-                        <form onSubmit={handleSearch} className="relative hidden sm:block">
-                            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
+                    <div className="flex items-center gap-6">
+                        <form onSubmit={handleSearch} className="relative hidden md:block group">
+                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/40 group-focus-within:text-primary transition-colors">
+                                <Search className="size-4" strokeWidth={3} />
+                            </div>
                             <Input
                                 type="text"
-                                placeholder="Cari kos..."
-                                className="h-9 w-64 pl-9 text-sm bg-neutral-50 dark:bg-neutral-900 border-none focus-visible:ring-primary/20"
+                                placeholder="Cari hunian impian Anda..."
+                                className="h-11 w-80 pl-11 pr-4 rounded-2xl border border-primary/5 bg-white/50 hover:bg-white hover:border-primary/20 focus-visible:bg-white focus-visible:ring-4 focus-visible:ring-primary/10 transition-all text-sm font-semibold text-neutral-800 placeholder:text-neutral-400 dark:bg-neutral-900/50 dark:border-primary/10 dark:text-white"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                             />
                         </form>
 
-                        {auth?.user ? (
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" className="size-10 rounded-full p-1 border border-neutral-100 dark:border-neutral-800">
-                                        <Avatar className="size-8 overflow-hidden rounded-full">
-                                            <AvatarImage src={auth.user.avatar} alt={auth.user.username} />
-                                            <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white font-bold">
-                                                {getInitials(auth.user.username)}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-56" align="end">
-                                    <UserMenuContent user={auth.user} />
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        ) : (
-                            <div className="flex items-center gap-2">
-                                <Link href="/login">
-                                    <Button variant="ghost" size="sm" className="font-medium">Masuk</Button>
-                                </Link>
-                                {/* <Link href="/register">
-                                    <Button size="sm" className="font-medium bg-primary hover:bg-primary/90 text-white border-none shadow-sm transition-all hover:shadow-md">Daftar</Button>
-                                </Link> */}
-                            </div>
-                        )}
+                        <div className="flex items-center gap-3">
+                            {auth?.user ? (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" className="h-12 px-3 rounded-2xl bg-white border border-primary/10 shadow-sm hover:bg-primary/5 hover:border-primary/20 transition-all flex items-center gap-3 group dark:bg-neutral-900 dark:border-primary/20">
+                                            <div className="flex flex-col items-end hidden sm:flex">
+                                                <span className="text-xs font-black text-neutral-900 leading-none dark:text-white tracking-tight">{auth.user.username}</span>
+                                                <span className="text-[10px] text-primary font-bold uppercase tracking-wider mt-0.5 opacity-80">Penghuni</span>
+                                            </div>
+                                            <Avatar className="size-9 overflow-hidden rounded-xl border-2 border-primary/10 group-hover:border-primary/30 transition-all shadow-sm">
+                                                <AvatarImage src={auth.user.avatar} alt={auth.user.username} />
+                                                <AvatarFallback className="rounded-xl bg-primary text-white font-black text-[11px]">
+                                                    {getInitials(auth.user.username)}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent className="w-60 mt-2 p-2 rounded-2xl shadow-2xl border-primary/10 bg-white dark:bg-neutral-950 dark:border-primary/20" align="end">
+                                        <UserMenuContent user={auth.user} />
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            ) : (
+                                <div className="flex items-center gap-4">
+                                    <Link href="/login">
+                                        <Button variant="ghost" className="h-11 px-6 rounded-2xl font-black text-sm text-neutral-600 hover:text-primary hover:bg-primary/5 transition-all tracking-tight">
+                                            Masuk
+                                        </Button>
+                                    </Link>
+                                    <Link href="/register">
+                                        <Button className="h-11 px-8 rounded-2xl bg-primary hover:bg-[#523521] text-white font-black text-sm tracking-tight shadow-[0_8px_20px_-6px_rgba(102,66,41,0.4)] hover:shadow-[0_12px_25px_-4px_rgba(102,66,41,0.5)] transition-all hover:-translate-y-0.5 border-none">
+                                            Daftar Gratis
+                                        </Button>
+                                    </Link>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </header>

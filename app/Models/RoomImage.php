@@ -9,12 +9,12 @@ class RoomImage extends Model
     protected $table = 'room_images';
 
     protected $fillable = [
-        'room_id',
+        'type_kamar_id',
         'gambar',
     ];
 
-    public function room()
+    public function typeKamar()
     {
-        return $this->belongsTo(Room::class, 'room_id', 'id');
+        return $this->belongsTo(TypeKamar::class, 'type_kamar_id', 'id');
     }
 }
