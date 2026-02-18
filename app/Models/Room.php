@@ -15,8 +15,6 @@ class Room extends Model
         'status',
         'billing_date',
         'description',
-        'billing_date',
-        'description',
     ];
 
     public function kos()

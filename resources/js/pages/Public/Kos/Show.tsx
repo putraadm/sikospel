@@ -2,6 +2,7 @@ import MainLayout from '@/components/main-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Carousel, CarouselContent, CarouselDots, CarouselItem } from '@/components/ui/carousel';
 import { BreadcrumbItem, Kos, Room } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import { MapPin, User, Phone, Home, CheckCircle2, XCircle, Info } from 'lucide-react';

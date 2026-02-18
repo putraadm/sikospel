@@ -42,6 +42,8 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user() ? $request->user()->load('role') : null,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'midtrans_client_key' => config('midtrans.client_key'),
+            'midtrans_is_production' => config('midtrans.is_production'),
         ];
     }
 }

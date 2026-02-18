@@ -1,8 +1,21 @@
 import { Head } from '@inertiajs/react';
-import { CreditCard, Calendar, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { CreditCard, Calendar, AlertTriangle, CheckCircle, Clock, Loader2 } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { useEffect, useState } from 'react';
+import axios from 'axios';
+import { toast } from 'sonner';
+import { usePage, router } from '@inertiajs/react';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog";
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -28,9 +41,30 @@ interface InvoiceData {
 
 interface Props {
     invoices: InvoiceData[];
+    midtrans_client_key: string;
+    midtrans_is_production: boolean;
 }
 
-export default function Tagihan({ invoices }: Props) {
+declare global {
+    interface Window {
+        snap: any;
+    }
+}
+
+export default function Tagihan({ invoices, midtrans_client_key, midtrans_is_production }: Props) {
+    const { url } = usePage();
+    const queryParams = new URLSearchParams(url.split('?')[1]);
+    const paymentStatus = queryParams.get('payment_status');
+    const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+
+    useEffect(() => {
+        if (paymentStatus === 'success') {
+            setShowSuccessDialog(true);
+            // Clean up the URL
+            const newUrl = url.split('?')[0];
+            router.visit(newUrl, { replace: true, preserveState: true, preserveScroll: true });
+        }
+    }, [paymentStatus, url]);
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
 
@@ -59,6 +93,64 @@ export default function Tagihan({ invoices }: Props) {
             badgeClass: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
             borderClass: 'border-l-red-500',
         },
+    };
+
+    const [loadingInvoiceId, setLoadingInvoiceId] = useState<number | null>(null);
+
+    useEffect(() => {
+        // Load Midtrans Snap Script
+        const script = document.createElement('script');
+        script.src = midtrans_is_production
+            ? 'https://app.midtrans.com/snap/snap.js'
+            : 'https://app.sandbox.midtrans.com/snap/snap.js';
+        script.setAttribute('data-client-key', midtrans_client_key);
+        document.body.appendChild(script);
+
+        return () => {
+            document.body.removeChild(script);
+        };
+    }, [midtrans_client_key]);
+
+    const handlePayment = async (invoiceId: number) => {
+        setLoadingInvoiceId(invoiceId);
+        try {
+            const response = await axios.post('/payment/token', {
+                invoice_id: invoiceId,
+            });
+
+            const snapToken = response.data.snap_token;
+
+            window.snap.pay(snapToken, {
+                onSuccess: async function (result: any) {
+                    try {
+                        await axios.post('/payment/status', { order_id: result.order_id });
+                    } catch (e) {
+                        console.error('Manual status sync failed:', e);
+                    }
+                    toast.success('Pembayaran berhasil!');
+                    window.location.reload();
+                },
+                onPending: async function (result: any) {
+                    try {
+                        await axios.post('/payment/status', { order_id: result.order_id });
+                    } catch (e) {
+                        console.error('Manual status sync failed:', e);
+                    }
+                    toast.info('Menunggu pembayaran...');
+                },
+                onError: function (result: any) {
+                    toast.error('Pembayaran gagal!');
+                },
+                onClose: function () {
+                    toast.warning('Pembayaran dibatalkan.');
+                }
+            });
+        } catch (error: any) {
+            console.error('Payment error:', error);
+            toast.error(error.response?.data?.message || 'Terjadi kesalahan saat memulai pembayaran.');
+        } finally {
+            setLoadingInvoiceId(null);
+        }
     };
 
     const belumDibayar = invoices.filter(i => i.status === 'belum_dibayar' || i.status === 'terlambat');
@@ -136,10 +228,25 @@ export default function Tagihan({ invoices }: Props) {
                                                     </span>
                                                 </div>
                                             </div>
-                                            <div className="text-right">
+                                            <div className="text-right flex flex-col items-end gap-2">
                                                 <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
                                                     {formatCurrency(Number(invoice.amount))}
                                                 </p>
+                                                {(invoice.status === 'belum_dibayar' || invoice.status === 'terlambat') && (
+                                                    <Button
+                                                        size="sm"
+                                                        className="bg-[#664229] hover:bg-[#4d321f]"
+                                                        onClick={() => handlePayment(invoice.id)}
+                                                        disabled={loadingInvoiceId === invoice.id}
+                                                    >
+                                                        {loadingInvoiceId === invoice.id ? (
+                                                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                        ) : (
+                                                            <CreditCard className="h-4 w-4 mr-2" />
+                                                        )}
+                                                        Bayar Sekarang
+                                                    </Button>
+                                                )}
                                             </div>
                                         </div>
                                     </CardContent>
@@ -159,6 +266,30 @@ export default function Tagihan({ invoices }: Props) {
                     </Card>
                 )}
             </div>
+
+            <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100 mb-4">
+                            <CheckCircle className="h-6 w-6 text-green-600" />
+                        </div>
+                        <DialogTitle className="text-center text-xl">Pembayaran Berhasil!</DialogTitle>
+                        <DialogDescription className="text-center pt-2">
+                            Terima kasih! Pembayaran tagihan Anda telah kami terima dan akan segera diproses.
+                            Status tagihan Anda akan diperbarui dalam beberapa saat.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="sm:justify-center">
+                        <Button
+                            type="button"
+                            className="bg-[#664229] hover:bg-[#4d321f] px-8"
+                            onClick={() => setShowSuccessDialog(false)}
+                        >
+                            Tutup
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }
