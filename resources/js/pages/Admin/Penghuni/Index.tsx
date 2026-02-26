@@ -1,6 +1,6 @@
-import { Head, useForm, router } from '@inertiajs/react';
-import { Plus, Trash2, Edit, MoreHorizontal, Eye, FileText } from 'lucide-react';
-import { useState } from 'react';
+import { Head, useForm, router, usePage, Link } from '@inertiajs/react';
+import { Plus, Trash2, Edit, MoreHorizontal, Eye, FileText, Copy, Check, TriangleAlert } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
 
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DataTable } from '@/components/ui/data-table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -26,14 +28,9 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-interface User {
-    id: number;
-    name: string;
-    email: string;
-}
+
 
 interface Penghuni {
-    id: number;
     user_id: number;
     name: string;
     no_wa: string | null;
@@ -41,88 +38,97 @@ interface Penghuni {
     religion: string | null;
     file_path_kk: string | null;
     file_path_ktp: string | null;
+    tanggal_daftar: string | null;
+    status_penghuni: 'penghuni' | 'pra penghuni';
     user: {
         email: string;
     };
+    current_room?: {
+        id: number;
+        room_number: string;
+        type_kamar?: {
+            id: number;
+            nama: string;
+        };
+        kos?: {
+            id: number;
+            name: string;
+        };
+    };
+}
+
+interface Room {
+    id: number;
+    room_number: string;
+    kos_id: number;
+    type_kamar_id: number;
+    status: string;
+    type_kamar: {
+        id: number;
+        nama: string;
+    };
+    kos: {
+        id: number;
+        name: string;
+    };
+}
+
+interface Kos {
+    id: number;
+    name: string;
+}
+
+interface TypeKamar {
+    id: number;
+    nama: string;
 }
 
 interface Props {
     penghuni: Penghuni[];
-    users: User[];
+    rooms: Room[];
+    typeKamars: TypeKamar[];
+    kos: Kos[];
+    flash: {
+        new_user_account?: {
+            username: string;
+            email: string;
+            password: string;
+            name: string;
+        } | null;
+    };
 }
 
-export default function Index({ penghuni, users }: Props) {
-    const { data, setData, post, processing, errors, reset } = useForm({
-        user_id: '',
-        name: '',
-        no_wa: '',
-        address: '',
-        religion: '',
-        file_path_kk: null as File | null,
-        file_path_ktp: null as File | null,
-    });
+const religions = [
+    'Islam',
+    'Kristen Protestan',
+    'Katolik',
+    'Hindu',
+    'Buddha',
+    'Khonghucu'
+];
 
-    const [showCreateModal, setShowCreateModal] = useState(false);
-    const [editingId, setEditingId] = useState<number | null>(null);
+export default function Index({ penghuni, flash }: Props) {
     const [selectedPenghuni, setSelectedPenghuni] = useState<Penghuni | null>(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
+    const [showAccountModal, setShowAccountModal] = useState(false);
+    const [copied, setCopied] = useState<string | null>(null);
 
-    // Edit form state
-    const { data: editData, setData: setEditData, post: postEdit, processing: editProcessing, errors: editErrors, reset: resetEdit } = useForm({
-        _method: 'PUT',
-        user_id: '',
-        name: '',
-        no_wa: '',
-        address: '',
-        religion: '',
-        file_path_kk: null as File | null,
-        file_path_ktp: null as File | null,
-    });
+    useEffect(() => {
+        if (flash?.new_user_account) {
+            setShowAccountModal(true);
+        }
+    }, [flash]);
+
+    const copyToClipboard = (text: string, type: string) => {
+        navigator.clipboard.writeText(text);
+        setCopied(type);
+        setTimeout(() => setCopied(null), 2000);
+    };
 
     // Delete confirmation state
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        post('/admin/penghuni', {
-            forceFormData: true,
-            onSuccess: () => {
-                reset();
-                setShowCreateModal(false);
-            },
-        });
-    };
-
-    const handleEdit = (item: Penghuni) => {
-        setEditingId(item.user_id); // Using user_id as identifier for update
-        setEditData({
-            _method: 'PUT',
-            user_id: item.user_id.toString(),
-            name: item.name,
-            no_wa: item.no_wa || '',
-            address: item.address || '',
-            religion: item.religion || '',
-            file_path_kk: null,
-            file_path_ktp: null,
-        });
-    };
-
-    const handleCancelEdit = () => {
-        setEditingId(null);
-        resetEdit();
-    };
-
-    const handleUpdate = (id: number) => {
-        postEdit(`/admin/penghuni/${id}`, {
-            forceFormData: true,
-            onSuccess: () => {
-                setEditingId(null);
-                resetEdit();
-            },
-        });
-    };
 
     const handleDetail = (item: Penghuni) => {
         setSelectedPenghuni(item);
@@ -178,6 +184,34 @@ export default function Index({ penghuni, users }: Props) {
             cell: ({ row }) => <div className="max-w-[200px] truncate">{row.getValue('address') || '-'}</div>,
         },
         {
+            accessorKey: 'status_penghuni',
+            header: 'Status',
+            cell: ({ row }) => {
+                const status = row.original.status_penghuni;
+                const badgeStyles = status === 'penghuni'
+                    ? 'bg-green-100 text-green-700 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400'
+                    : 'bg-blue-100 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400';
+
+                return (
+                    <Badge className={cn("capitalize font-semibold border-none shadow-none", badgeStyles)}>
+                        {status}
+                    </Badge>
+                );
+            },
+        },
+        {
+            id: 'room',
+            header: 'Kamar',
+            cell: ({ row }) => (
+                <div>
+                    {row.original.current_room
+                        ? `${row.original.current_room.room_number} (${row.original.current_room.kos?.name || '-'})`
+                        : '-'
+                    }
+                </div>
+            ),
+        },
+        {
             id: 'actions',
             header: 'Aksi',
             cell: ({ row }) => {
@@ -195,21 +229,14 @@ export default function Index({ penghuni, users }: Props) {
                                 <Eye className="mr-2 h-4 w-4" />
                                 Detail
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEdit(item)}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit
+                            <DropdownMenuItem asChild>
+                                <Link href={`/admin/penghuni/${item.user_id}/edit`}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Edit
+                                </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                                onClick={() => confirmDelete(item.id)} // Assuming ID for delete is primary key 'id' but controller uses user_id sometimes? Let's check controller destroy method uses findOrFail($id) which usually implies primary key. Legacy used user_id. Let's check legacy delete. Legacy: handleDeleteClick(item.user_id). Controller public function destroy($id) { $penghuni = \App\Models\Penghuni::findOrFail($id); ... }
-                                // It seems legacy passed user_id to destroy? If Penghuni model uses unique 'user_id', findOrFail might be on 'id' though. 
-                                // Let's use item.id for now as it's the primary key. If back-end expects user_id for delete, I might need to swap.
-                                // Legacy code: handleDeleteClick(item.user_id). Route::resource usually uses ID.
-                                // Let's stick to item.user_id if legacy used it, or item.id if standard.
-                                // Wait, legacy: <TableRow key={item.user_id}> ... onClick={() => handleDeleteClick(item.user_id)}
-                                // Code: router.delete(`/admin/penghuni/${deleteId}`...
-                                // Controler: $penghuni = \App\Models\Penghuni::findOrFail($id);
-                                // If $id is user_id, then Penghuni model must have primary key 'user_id' or findOrFail searches on primary key.
-                                // Standard is 'id'. I will use item.id.
+                                onClick={() => confirmDelete(item.user_id)}
                                 className="text-red-600"
                             >
                                 <Trash2 className="mr-2 h-4 w-4" />
@@ -230,215 +257,20 @@ export default function Index({ penghuni, users }: Props) {
                     <h1 className="text-2xl font-bold">Kelola Penghuni</h1>
                 </div>
 
-                <div className="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
+                <div className="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border bg-white dark:bg-[#161615]">
                     <DataTable
                         columns={columns}
                         data={penghuni}
                         headerAction={
-                            <Button onClick={() => setShowCreateModal(true)}>
-                                <Plus className="h-4 w-4" />
-                                Tambah
-                            </Button>
+                            <Link href="/admin/penghuni/create">
+                                <Button className="bg-[#664229] hover:bg-[#664229]/90 text-white">
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Tambah Penghuni
+                                </Button>
+                            </Link>
                         }
                     />
                 </div>
-
-                {/* Create Modal */}
-                <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-                    <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
-                        <DialogHeader>
-                            <DialogTitle>Tambah Penghuni Baru</DialogTitle>
-                            <DialogDescription>Masukkan data penghuni baru.</DialogDescription>
-                        </DialogHeader>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <Label htmlFor="user_id">User Akun</Label>
-                                <Select value={data.user_id} onValueChange={(value) => setData('user_id', value)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Pilih User" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {users.map((user) => (
-                                            <SelectItem key={user.id} value={user.id.toString()}>
-                                                {user.name} ({user.email})
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                {errors.user_id && <p className="text-sm text-red-600">{errors.user_id}</p>}
-                            </div>
-                            <div>
-                                <Label htmlFor="name">Nama Lengkap</Label>
-                                <Input
-                                    id="name"
-                                    value={data.name}
-                                    onChange={(e) => setData('name', e.target.value)}
-                                    placeholder="Nama Lengkap"
-                                />
-                                {errors.name && <p className="text-sm text-red-600">{errors.name}</p>}
-                            </div>
-                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                <div>
-                                    <Label htmlFor="no_wa">No. WhatsApp</Label>
-                                    <Input
-                                        id="no_wa"
-                                        value={data.no_wa}
-                                        onChange={(e) => setData('no_wa', e.target.value)}
-                                        placeholder="08..."
-                                    />
-                                    {errors.no_wa && <p className="text-sm text-red-600">{errors.no_wa}</p>}
-                                </div>
-                                <div>
-                                    <Label htmlFor="religion">Agama</Label>
-                                    <Input
-                                        id="religion"
-                                        value={data.religion}
-                                        onChange={(e) => setData('religion', e.target.value)}
-                                        placeholder="Agama"
-                                    />
-                                    {errors.religion && <p className="text-sm text-red-600">{errors.religion}</p>}
-                                </div>
-                            </div>
-                            <div>
-                                <Label htmlFor="address">Alamat</Label>
-                                <Textarea
-                                    id="address"
-                                    value={data.address}
-                                    onChange={(e) => setData('address', e.target.value)}
-                                    placeholder="Alamat Lengkap"
-                                />
-                                {errors.address && <p className="text-sm text-red-600">{errors.address}</p>}
-                            </div>
-                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                <div>
-                                    <Label htmlFor="file_path_kk">Upload KK</Label>
-                                    <Input
-                                        id="file_path_kk"
-                                        type="file"
-                                        onChange={(e) => setData('file_path_kk', e.target.files ? e.target.files[0] : null)}
-                                        accept=".pdf,.jpg,.jpeg,.png"
-                                    />
-                                    {errors.file_path_kk && <p className="text-sm text-red-600">{errors.file_path_kk}</p>}
-                                </div>
-                                <div>
-                                    <Label htmlFor="file_path_ktp">Upload KTP</Label>
-                                    <Input
-                                        id="file_path_ktp"
-                                        type="file"
-                                        onChange={(e) => setData('file_path_ktp', e.target.files ? e.target.files[0] : null)}
-                                        accept=".pdf,.jpg,.jpeg,.png"
-                                    />
-                                    {errors.file_path_ktp && <p className="text-sm text-red-600">{errors.file_path_ktp}</p>}
-                                </div>
-                            </div>
-                            <DialogFooter>
-                                <Button type="button" variant="outline" onClick={() => setShowCreateModal(false)}>
-                                    Batal
-                                </Button>
-                                <Button type="submit" disabled={processing}>
-                                    Simpan
-                                </Button>
-                            </DialogFooter>
-                        </form>
-                    </DialogContent>
-                </Dialog>
-
-                {/* Edit Modal */}
-                <Dialog open={editingId !== null} onOpenChange={(open) => !open && handleCancelEdit()}>
-                    <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
-                        <DialogHeader>
-                            <DialogTitle>Edit Penghuni</DialogTitle>
-                        </DialogHeader>
-                        <form onSubmit={(e) => { e.preventDefault(); handleUpdate(editingId!); }} className="space-y-4">
-                            <div>
-                                <Label htmlFor="edit-user_id">User Akun</Label>
-                                <Select value={editData.user_id} onValueChange={(value) => setEditData('user_id', value)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Pilih User" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {users.map((user) => (
-                                            <SelectItem key={user.id} value={user.id.toString()}>
-                                                {user.name} ({user.email})
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                {editErrors.user_id && <p className="text-sm text-red-600">{editErrors.user_id}</p>}
-                            </div>
-                            <div>
-                                <Label htmlFor="edit-name">Nama Lengkap</Label>
-                                <Input
-                                    id="edit-name"
-                                    value={editData.name}
-                                    onChange={(e) => setEditData('name', e.target.value)}
-                                    placeholder="Nama Lengkap"
-                                />
-                                {editErrors.name && <p className="text-sm text-red-600">{editErrors.name}</p>}
-                            </div>
-                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                <div>
-                                    <Label htmlFor="edit-no_wa">No. WhatsApp</Label>
-                                    <Input
-                                        id="edit-no_wa"
-                                        value={editData.no_wa}
-                                        onChange={(e) => setEditData('no_wa', e.target.value)}
-                                        placeholder="08..."
-                                    />
-                                    {editErrors.no_wa && <p className="text-sm text-red-600">{editErrors.no_wa}</p>}
-                                </div>
-                                <div>
-                                    <Label htmlFor="edit-religion">Agama</Label>
-                                    <Input
-                                        id="edit-religion"
-                                        value={editData.religion}
-                                        onChange={(e) => setEditData('religion', e.target.value)}
-                                        placeholder="Agama"
-                                    />
-                                    {editErrors.religion && <p className="text-sm text-red-600">{editErrors.religion}</p>}
-                                </div>
-                            </div>
-                            <div>
-                                <Label htmlFor="edit-address">Alamat</Label>
-                                <Textarea
-                                    id="edit-address"
-                                    value={editData.address}
-                                    onChange={(e) => setEditData('address', e.target.value)}
-                                    placeholder="Alamat Lengkap"
-                                />
-                                {editErrors.address && <p className="text-sm text-red-600">{editErrors.address}</p>}
-                            </div>
-                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                <div>
-                                    <Label htmlFor="edit-file_path_kk">Update KK (Opsional)</Label>
-                                    <Input
-                                        id="edit-file_path_kk"
-                                        type="file"
-                                        onChange={(e) => setEditData('file_path_kk', e.target.files ? e.target.files[0] : null)}
-                                        accept=".pdf,.jpg,.jpeg,.png"
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="edit-file_path_ktp">Update KTP (Opsional)</Label>
-                                    <Input
-                                        id="edit-file_path_ktp"
-                                        type="file"
-                                        onChange={(e) => setEditData('file_path_ktp', e.target.files ? e.target.files[0] : null)}
-                                        accept=".pdf,.jpg,.jpeg,.png"
-                                    />
-                                </div>
-                            </div>
-                            <DialogFooter>
-                                <Button type="button" variant="outline" onClick={handleCancelEdit}>
-                                    Batal
-                                </Button>
-                                <Button type="submit" disabled={editProcessing}>
-                                    Simpan Perubahan
-                                </Button>
-                            </DialogFooter>
-                        </form>
-                    </DialogContent>
-                </Dialog>
 
                 {/* Detail Modal */}
                 <Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>
@@ -464,6 +296,32 @@ export default function Index({ penghuni, users }: Props) {
                                     <div className="space-y-1">
                                         <h4 className="text-sm font-medium text-muted-foreground">Agama</h4>
                                         <p className="text-base">{selectedPenghuni.religion || '-'}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <h4 className="text-sm font-medium text-muted-foreground">Tanggal Daftar</h4>
+                                        <p className="text-base">{selectedPenghuni.tanggal_daftar || '-'}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <h4 className="text-sm font-medium text-muted-foreground">Status Penghuni</h4>
+                                        <div>
+                                            <Badge className={cn(
+                                                "capitalize font-semibold border-none shadow-none",
+                                                selectedPenghuni.status_penghuni === 'penghuni'
+                                                    ? 'bg-green-100 text-green-700 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400'
+                                                    : 'bg-blue-100 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400'
+                                            )}>
+                                                {selectedPenghuni.status_penghuni}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <h4 className="text-sm font-medium text-muted-foreground">Kamar</h4>
+                                        <p className="text-base">
+                                            {selectedPenghuni.current_room
+                                                ? `${selectedPenghuni.current_room.room_number} (${selectedPenghuni.current_room.type_kamar?.nama || '-'})`
+                                                : '-'
+                                            }
+                                        </p>
                                     </div>
                                     <div className="col-span-2 space-y-1">
                                         <h4 className="text-sm font-medium text-muted-foreground">Alamat</h4>
@@ -566,6 +424,71 @@ export default function Index({ penghuni, users }: Props) {
                         )}
                         <DialogFooter>
                             <Button onClick={() => setShowDetailModal(false)}>Tutup</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Account Details Modal (After Success) */}
+                <Dialog open={showAccountModal} onOpenChange={setShowAccountModal}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2 text-green-600">
+                                <Check className="h-5 w-5" />
+                                Akun Berhasil Dibuat
+                            </DialogTitle>
+                            <DialogDescription>
+                                Berikut adalah data akun untuk <strong>{flash?.new_user_account?.name}</strong>.
+                                Mohon berikan data ini kepada penghuni.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="space-y-4 py-4">
+                            <div className="rounded-lg bg-amber-50 p-3 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-900">
+                                <div className="flex gap-2 text-amber-800 dark:text-amber-400">
+                                    <TriangleAlert className="h-5 w-5 shrink-0" />
+                                    <p className="text-xs font-medium">
+                                        Penting: Simpan atau catat data ini sekarang. Password ini hanya muncul satu kali ini saja.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <div className="space-y-1">
+                                    <Label className="text-xs text-muted-foreground">Username</Label>
+                                    <div className="flex gap-2">
+                                        <Input readOnly value={flash?.new_user_account?.username || ''} className="bg-muted font-mono text-sm" />
+                                        <Button variant="outline" size="icon" onClick={() => copyToClipboard(flash?.new_user_account?.username || '', 'user')}>
+                                            {copied === 'user' ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <Label className="text-xs text-muted-foreground">Email</Label>
+                                    <div className="flex gap-2">
+                                        <Input readOnly value={flash?.new_user_account?.email || ''} className="bg-muted font-mono text-sm" />
+                                        <Button variant="outline" size="icon" onClick={() => copyToClipboard(flash?.new_user_account?.email || '', 'email')}>
+                                            {copied === 'email' ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <Label className="text-xs text-muted-foreground font-bold text-[#664229]">PASSWORD</Label>
+                                    <div className="flex gap-2">
+                                        <Input readOnly value={flash?.new_user_account?.password || ''} className="bg-amber-50 dark:bg-amber-950/20 font-mono text-sm font-bold border-amber-200 dark:border-amber-900" />
+                                        <Button variant="outline" size="icon" onClick={() => copyToClipboard(flash?.new_user_account?.password || '', 'pass')} className="border-amber-200 hover:bg-amber-100 dark:border-amber-900">
+                                            {copied === 'pass' ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <DialogFooter>
+                            <Button className="w-full bg-[#664229] hover:bg-[#664229]/90 text-white" onClick={() => setShowAccountModal(false)}>
+                                Saya Sudah Simpan Datanya
+                            </Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>

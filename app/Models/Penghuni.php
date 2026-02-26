@@ -18,6 +18,8 @@ class Penghuni extends Model
         'religion',
         'file_path_kk',
         'file_path_ktp',
+        'tanggal_daftar',
+        'status_penghuni',
     ];
 
     public function user()

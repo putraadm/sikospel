@@ -2,13 +2,14 @@ import MainLayout from '@/components/main-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Carousel, CarouselContent, CarouselDots, CarouselItem } from '@/components/ui/carousel';
-import { BreadcrumbItem, Kos, Room } from '@/types';
+import { Carousel, CarouselContent, CarouselDots, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel';
+import { BreadcrumbItem, Kos, Room, TypeKamar } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import { MapPin, User, Phone, Home, CheckCircle2, XCircle, Info } from 'lucide-react';
 
 interface Props {
     kos: Kos;
+    typeKamars: TypeKamar[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -22,14 +23,13 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Show({ kos }: Props) {
+export default function Show({ kos, typeKamars }: Props) {
     const availableRooms = kos.rooms?.filter((room) => room.status === 'tersedia') || [];
 
     return (
         <MainLayout breadcrumbs={breadcrumbs}>
             <Head title={`Kos ${kos.name}`} />
-
-            <div className="container mx-auto px-4 py-8 max-w-5xl">
+            <div className="container mx-auto px-4 py-8 max-w-7xl">
                 {/* Hero Section */}
                 <div className="relative h-64 md:h-96 rounded-2xl overflow-hidden mb-8 shadow-xl">
                     <img
@@ -72,65 +72,69 @@ export default function Show({ kos }: Props) {
                                 <Home className="w-6 h-6 mr-2 text-primary" />
                                 Tipe Kamar
                             </h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {(() => {
-                                    // Group rooms by type_kamar_id to display unique types
-                                    const uniqueTypes = new Map();
-                                    kos.rooms?.forEach(room => {
-                                        if (room.type_kamar && !uniqueTypes.has(room.type_kamar_id)) {
-                                            uniqueTypes.set(room.type_kamar_id, {
-                                                ...room.type_kamar,
-                                                availableCount: 0,
-                                                totalCount: 0
-                                            });
-                                        }
-                                        if (room.type_kamar) {
-                                            const type = uniqueTypes.get(room.type_kamar_id);
-                                            type.totalCount++;
-                                            if (room.status === 'tersedia') {
-                                                type.availableCount++;
-                                            }
-                                        }
-                                    });
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                {typeKamars && typeKamars.length > 0 ? (
+                                    typeKamars.map((type) => {
+                                        const roomsOfType = kos.rooms?.filter(r => r.type_kamar_id === type.id) || [];
+                                        const availableCount = roomsOfType.filter(r => r.status === 'tersedia').length;
 
-                                    const types = Array.from(uniqueTypes.values());
-
-                                    return types.length > 0 ? (
-                                        types.map((type) => (
-                                            <Card key={type.id} className="flex flex-col overflow-hidden border-none shadow-sm transition-all hover:shadow-md">
-                                                <div className="h-48 overflow-hidden shrink-0 relative">
+                                        return (
+                                            <Card key={type.id} className="flex flex-col overflow-hidden border-none shadow-sm transition-all hover:shadow-md h-full">
+                                                <div className="h-40 overflow-hidden shrink-0 relative group">
                                                     {type.images && type.images.length > 0 ? (
-                                                        <img src={`/storage/${type.images[0].gambar}`} alt={type.nama} className="w-full h-full object-cover transition-transform hover:scale-105 duration-300" />
+                                                        <Carousel className="w-full h-full">
+                                                            <CarouselContent className="h-full">
+                                                                {type.images.map((img: any) => (
+                                                                    <CarouselItem key={img.id} className="h-full w-full basis-full">
+                                                                        <div className="h-full w-full">
+                                                                            <img
+                                                                                src={`/storage/${img.gambar}`}
+                                                                                alt={`${type.nama} - Image`}
+                                                                                className="w-full h-full object-cover transition-transform hover:scale-105 duration-300"
+                                                                            />
+                                                                        </div>
+                                                                    </CarouselItem>
+                                                                ))}
+                                                            </CarouselContent>
+                                                            {type.images.length > 1 && (
+                                                                <div className="absolute bottom-2 left-0 right-0 flex justify-center">
+                                                                    <CarouselDots hideIfOne />
+                                                                </div>
+                                                            )}
+                                                        </Carousel>
                                                     ) : (
                                                         <div className="w-full h-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-400">
                                                             No Image
                                                         </div>
                                                     )}
-                                                    <div className="absolute top-2 right-2">
-                                                        <Badge variant={type.availableCount > 0 ? "default" : "secondary"} className={type.availableCount > 0 ? "bg-green-600 hover:bg-green-700" : ""}>
-                                                            {type.availableCount} Tersedia
+                                                    <div className="absolute top-2 right-2 z-10">
+                                                        <Badge
+                                                            variant={availableCount > 0 ? "default" : "secondary"}
+                                                            className={availableCount > 0 ? "bg-green-600 hover:bg-green-700" : ""}
+                                                        >
+                                                            {availableCount} Tersedia
                                                         </Badge>
                                                     </div>
                                                 </div>
-                                                <div className="p-5 flex-grow flex flex-col justify-between gap-4 bg-white dark:bg-[#161615]">
-                                                    <div className="space-y-2">
-                                                        <h3 className="text-xl font-bold">{type.nama}</h3>
-                                                        <p className="text-sm text-[#706f6c] dark:text-[#A1A09A] line-clamp-2">
+                                                <div className="p-4 flex-grow flex flex-col justify-between gap-3 bg-white dark:bg-[#161615]">
+                                                    <div className="space-y-1">
+                                                        <h3 className="text-lg font-bold">{type.nama}</h3>
+                                                        <p className="text-xs text-[#706f6c] dark:text-[#A1A09A] line-clamp-2">
                                                             {type.deskripsi || 'Fasilitas lengkap untuk kenyamanan Anda.'}
                                                         </p>
                                                     </div>
-                                                    <div className="flex items-center justify-between border-t pt-4 border-neutral-100 dark:border-neutral-800">
-                                                        <span className="text-xl font-bold text-primary">
-                                                            Rp {Number(type.harga || 0).toLocaleString('id-ID')}<span className="text-xs text-gray-400 font-normal">/bulan</span>
+                                                    <div className="flex items-center justify-between border-t pt-3 border-neutral-100 dark:border-neutral-800">
+                                                        <span className="text-lg font-bold text-primary">
+                                                            Rp {Number(type.harga || 0).toLocaleString('id-ID')}<span className="text-[10px] text-gray-400 font-normal">/bulan</span>
                                                         </span>
                                                     </div>
                                                 </div>
                                             </Card>
-                                        ))
-                                    ) : (
-                                        <p className="text-center py-10 text-gray-500 border-2 border-dashed rounded-xl col-span-full w-full">Belum ada tipe kamar yang tersedia.</p>
-                                    );
-                                })()}
+                                        );
+                                    })
+                                ) : (
+                                    <p className="text-center py-10 text-gray-500 border-2 border-dashed rounded-xl col-span-full w-full">Belum ada tipe kamar yang tersedia.</p>
+                                )}
                             </div>
                         </div>
                     </div>

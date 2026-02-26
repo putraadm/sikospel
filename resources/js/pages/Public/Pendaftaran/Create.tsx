@@ -40,15 +40,24 @@ interface Kos {
     }[];
 }
 
+interface TypeKamar {
+    id: number;
+    nama: string;
+    harga: number;
+    deskripsi?: string;
+    images?: { id: number; gambar: string }[];
+}
+
 interface Props {
     kosList: Kos[];
+    typeKamars: TypeKamar[];
     selectedKos?: Kos | null;
 }
 
-export default function Create({ kosList, selectedKos: initialSelectedKos }: Props) {
+export default function Create({ kosList, typeKamars, selectedKos: initialSelectedKos }: Props) {
     const { data, setData, post, processing, errors } = useForm({
         kos_id: initialSelectedKos ? initialSelectedKos.id.toString() : '',
-        preferred_room_id: '',
+        type_kamar_id: '',
         nama: '',
         alamat: '',
         agama: '',
@@ -65,7 +74,6 @@ export default function Create({ kosList, selectedKos: initialSelectedKos }: Pro
         if (!formRef.current) return;
 
         const ctx = gsap.context(() => {
-            // Enhanced Hero Animations
             const tl = gsap.timeline();
 
             tl.from('.hero-badge', {
@@ -101,7 +109,6 @@ export default function Create({ kosList, selectedKos: initialSelectedKos }: Pro
                     ease: 'power2.out'
                 }, '-=0.5');
 
-            // Floating movement for cards
             gsap.to('.hero-floating-card-left', {
                 y: -15,
                 duration: 3,
@@ -151,15 +158,12 @@ export default function Create({ kosList, selectedKos: initialSelectedKos }: Pro
     };
 
     const selectedKos = kosList.find(k => k.id.toString() === data.kos_id);
-    const availableRooms = selectedKos?.rooms.filter(room => room.status === 'tersedia') || [];
-    const totalAvailableRooms = kosList.reduce((acc, k) => acc + k.rooms.filter(r => r.status === 'tersedia').length, 0);
 
     return (
         <MainLayout breadcrumbs={breadcrumbs}>
             <Head title="Eksplorasi Hunian Elite - SIKOSPEL" />
 
             <div ref={formRef} className="min-h-screen bg-[#f8f1ea] dark:bg-[#0d0907] relative overflow-hidden pb-40">
-                {/* Dynamic Luxury Background */}
                 <div className="fixed inset-0 pointer-events-none z-0">
                     <ColorBends
                         colors={['#1e110a', '#3e2717', '#5a3a22', '#8b5e3c', '#c4a484']}
@@ -170,12 +174,9 @@ export default function Create({ kosList, selectedKos: initialSelectedKos }: Pro
                         transparent={true}
                     />
                     <div className="absolute inset-0 bg-white/40 dark:bg-black/70 backdrop-blur-[100px]"></div>
-
-                    {/* Architectural Grid Overlay */}
                     <div className="absolute inset-0 bg-[linear-gradient(to_right,#8b5e3c1a_1px,transparent_1px),linear-gradient(to_bottom,#8b5e3c1a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
                 </div>
 
-                {/* Grainy Texture Overlay */}
                 <div className="fixed inset-0 pointer-events-none z-[1] opacity-[0.04] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
 
                 <div className="container mx-auto px-4 pt-32 relative z-10">
@@ -184,9 +185,88 @@ export default function Create({ kosList, selectedKos: initialSelectedKos }: Pro
                             <div className="lg:col-span-12 xl:col-span-7 space-y-24 relative">
                                 <div className="absolute left-8 top-10 bottom-0 w-px bg-gradient-to-b from-[#8b5e3c]/20 via-[#8b5e3c]/10 to-transparent hidden md:block"></div>
 
+                                {/* Step 1: Location & Type */}
                                 <div className="form-step relative pl-0 md:pl-24">
                                     <div className="absolute left-0 top-0 hidden md:flex size-16 rounded-2xl bg-[#f8f1ea] dark:bg-[#0d0907] border border-[#8b5e3c]/20 items-center justify-center z-10 group-hover:scale-110 transition-transform duration-500 shadow-lg">
                                         <span className="font-black text-xl text-[#8b5e3c]">01</span>
+                                    </div>
+
+                                    <div className="space-y-8">
+                                        <div className="flex flex-col gap-2">
+                                            <h3 className="text-5xl font-black text-[#1e110a] dark:text-white tracking-tighter">Lokasi & Tipe</h3>
+                                            <p className="text-[#3e2717]/60 text-lg max-w-md">Pilih hunian dan tipe kamar yang Anda dambakan.</p>
+                                        </div>
+
+                                        <Card className="border-none rounded-[3rem] bg-white/60 dark:bg-neutral-900/60 backdrop-blur-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-700 group ring-1 ring-[#3e2717]/5">
+                                            <CardContent className="p-8 md:p-12 space-y-12">
+                                                <div className="grid grid-cols-1 gap-8">
+                                                    <div className="space-y-4">
+                                                        <Label className="text-xs font-black uppercase tracking-[0.3em] text-[#664229]/40 ml-4">Choose Location</Label>
+                                                        <Select value={data.kos_id} onValueChange={(value) => setData('kos_id', value)}>
+                                                            <SelectTrigger className="h-20 rounded-[2rem] border-2 border-[#3e2717]/5 bg-white/60 px-8 text-lg font-bold focus:ring-4 focus:ring-[#8b5e3c]/5 focus:border-[#8b5e3c]/20 transition-all">
+                                                                <SelectValue placeholder="Pilih Lokasi Kos" />
+                                                            </SelectTrigger>
+                                                            <SelectContent className="rounded-[2rem] border-none shadow-xl p-2">
+                                                                {kosList.map((kos) => (
+                                                                    <SelectItem key={kos.id} value={kos.id.toString()} className="rounded-[1.2rem] py-3 px-6 font-bold">
+                                                                        {kos.name} - {kos.address}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                        {errors.kos_id && <p className="text-xs font-bold text-red-500 ml-4">{errors.kos_id}</p>}
+                                                    </div>
+
+                                                    <div className="space-y-6">
+                                                        <Label className="text-xs font-black uppercase tracking-[0.3em] text-[#664229]/40 ml-4">Preferred Room Type</Label>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            {typeKamars.map((type) => (
+                                                                <div
+                                                                    key={type.id}
+                                                                    onClick={() => setData('type_kamar_id', type.id.toString())}
+                                                                    className={cn(
+                                                                        "relative cursor-pointer group/type overflow-hidden rounded-[2rem] border-2 transition-all duration-300",
+                                                                        data.type_kamar_id === type.id.toString()
+                                                                            ? "border-[#8b5e3c] bg-[#8b5e3c]/5 ring-4 ring-[#8b5e3c]/10"
+                                                                            : "border-[#3e2717]/5 bg-white/40 hover:border-[#8b5e3c]/30"
+                                                                    )}
+                                                                >
+                                                                    <div className="h-32 w-full overflow-hidden">
+                                                                        {type.images && type.images.length > 0 ? (
+                                                                            <img
+                                                                                src={`/storage/${type.images[0].gambar}`}
+                                                                                className="w-full h-full object-cover transition-transform duration-500 group-hover/type:scale-110"
+                                                                            />
+                                                                        ) : (
+                                                                            <div className="w-full h-full bg-neutral-200 flex items-center justify-center">
+                                                                                <Home className="text-neutral-400" />
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="p-6">
+                                                                        <div className="flex justify-between items-start mb-1">
+                                                                            <h4 className="font-black text-lg">{type.nama}</h4>
+                                                                            {data.type_kamar_id === type.id.toString() && (
+                                                                                <CheckCircle2 className="size-5 text-[#8b5e3c]" />
+                                                                            )}
+                                                                        </div>
+                                                                        <p className="text-primary font-bold">Rp {type.harga.toLocaleString()}<span className="text-[10px] text-neutral-400 font-normal">/hari</span></p>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        {errors.type_kamar_id && <p className="text-xs font-bold text-red-500 ml-4">{errors.type_kamar_id}</p>}
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </div>
+                                </div>
+
+                                {/* Step 2: Profil */}
+                                <div className="form-step relative pl-0 md:pl-24">
+                                    <div className="absolute left-0 top-0 hidden md:flex size-16 rounded-2xl bg-[#f8f1ea] dark:bg-[#0d0907] border border-[#8b5e3c]/20 items-center justify-center z-10 group-hover:scale-110 transition-transform duration-500 shadow-lg">
+                                        <span className="font-black text-xl text-[#8b5e3c]">02</span>
                                     </div>
 
                                     <div className="space-y-8">
@@ -251,9 +331,10 @@ export default function Create({ kosList, selectedKos: initialSelectedKos }: Pro
                                     </div>
                                 </div>
 
+                                {/* Step 3: Legalitas */}
                                 <div className="form-step relative pl-0 md:pl-24">
                                     <div className="absolute left-0 top-0 hidden md:flex size-16 rounded-2xl bg-[#f8f1ea] dark:bg-[#0d0907] border border-[#8b5e3c]/20 items-center justify-center z-10 group-hover:scale-110 transition-transform duration-500 shadow-lg">
-                                        <span className="font-black text-xl text-[#8b5e3c]">02</span>
+                                        <span className="font-black text-xl text-[#8b5e3c]">03</span>
                                     </div>
 
                                     <div className="space-y-8">
@@ -268,7 +349,7 @@ export default function Create({ kosList, selectedKos: initialSelectedKos }: Pro
                                                     {[
                                                         { label: 'KTP', field: 'file_ktp' as const, icon: CreditCard, subtitle: 'Kartu Tanda Penduduk' },
                                                         { label: 'KK', field: 'file_kk' as const, icon: FileText, subtitle: 'Kartu Keluarga' }
-                                                    ].map((doc, idx) => (
+                                                    ].map((doc) => (
                                                         <div key={doc.field} className="relative h-[240px] rounded-[2.5rem] border-2 border-dashed border-[#3e2717]/10 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-[#3e2717]/5 transition-colors group/doc">
                                                             <Input
                                                                 type="file"
@@ -338,15 +419,13 @@ export default function Create({ kosList, selectedKos: initialSelectedKos }: Pro
                                 </div>
                             </div>
 
-                            {/* Sticky Summary - 5 Columns */}
+                            {/* Sticky Summary */}
                             <div className="lg:col-span-12 xl:col-span-5 sticky top-10 xl:top-32 z-20 mt-12 xl:mt-0">
                                 <div className="sticky-card">
                                     <div className="relative group/summary">
-                                        {/* Back Glow */}
                                         <div className="absolute -inset-4 bg-gradient-to-b from-[#3e2717]/20 to-transparent rounded-[4rem] blur-2xl opacity-0 group-hover/summary:opacity-100 transition-opacity duration-700"></div>
 
                                         <Card className="relative border-none rounded-[4rem] bg-[#1e110a] text-[#f8f1ea] overflow-hidden shadow-2xl ring-1 ring-white/10">
-                                            {/* Top Texture */}
                                             <div className="absolute top-0 inset-x-0 h-32 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10"></div>
                                             <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-[#8b5e3c] via-[#c4a484] to-[#8b5e3c]"></div>
 
@@ -375,15 +454,15 @@ export default function Create({ kosList, selectedKos: initialSelectedKos }: Pro
                                                         <div className="h-px bg-white/5"></div>
                                                         <div className="flex justify-between items-end">
                                                             <div>
-                                                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30">Unit</span>
-                                                                <p className="text-3xl font-black text-[#8b5e3c]">
-                                                                    {data.preferred_room_id ? `#${availableRooms.find(r => r.id.toString() === data.preferred_room_id)?.room_number}` : '--'}
+                                                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30">Type</span>
+                                                                <p className="text-2xl font-black text-[#8b5e3c]">
+                                                                    {data.type_kamar_id ? typeKamars.find(t => t.id.toString() === data.type_kamar_id)?.nama : '--'}
                                                                 </p>
                                                             </div>
                                                             <div className="text-right">
-                                                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30">Price/Mo</span>
+                                                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30">Price/Day</span>
                                                                 <p className="text-xl font-bold">
-                                                                    {data.preferred_room_id ? `Rp ${Number(availableRooms.find(r => r.id.toString() === data.preferred_room_id)?.type_kamar?.harga || 0).toLocaleString()}` : 'Rp 0'}
+                                                                    {data.type_kamar_id ? `Rp ${Number(typeKamars.find(t => t.id.toString() === data.type_kamar_id)?.harga || 0).toLocaleString()}/hari` : 'Rp 0'}
                                                                 </p>
                                                             </div>
                                                         </div>

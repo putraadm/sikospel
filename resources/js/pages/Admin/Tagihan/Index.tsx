@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Calendar, Plus, Edit, MoreHorizontal, Eye, Download, Info, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
+import { Plus, MoreHorizontal, Eye, Download, Info, CheckCircle2, AlertCircle, FileText } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
 
@@ -50,6 +50,7 @@ interface Payment {
     amount_paid: number;
     payment_date: string;
     bukti_pembayaran: string | null;
+    transaction_id: string | null;
     status: string;
 }
 
@@ -60,29 +61,21 @@ interface Invoice {
     billing_period: string;
     status: 'belum_dibayar' | 'lunas' | 'terlambat';
     tenancy: {
-        penghuni: { name: string };
+        penghuni: {
+            name: string;
+            status_penghuni: 'penghuni' | 'pra penghuni';
+        };
         room: Room;
     };
     payments: Payment[];
 }
 
 interface Props {
-    rooms: Room[];
     invoices: Invoice[];
 }
 
-export default function Tagihan({ rooms = [], invoices = [] }: Props) {
-    const [activeTab, setActiveTab] = useState<'pengaturan' | 'pembayaran'>('pengaturan');
+export default function Tagihan({ invoices = [] }: Props) {
     const [selectedProof, setSelectedProof] = useState<string | null>(null);
-
-    // Filter rooms that have billing_date set for the table
-    const billingRooms = useMemo(() => {
-        return rooms.filter(room => room.billing_date !== null && room.billing_date !== undefined);
-    }, [rooms]);
-
-    const handleEdit = (room: Room) => {
-        router.get(`/admin/tagihan/create?room_id=${room.id}`);
-    };
 
     const getInvoiceStatusBadge = (status: string) => {
         const variants: Record<string, string> = {
@@ -97,57 +90,6 @@ export default function Tagihan({ rooms = [], invoices = [] }: Props) {
         };
         return <Badge variant="outline" className={variants[status] || ''}>{labels[status] || status}</Badge>;
     };
-
-    const columnsPengaturan: ColumnDef<Room>[] = [
-        {
-            accessorKey: 'kos.name',
-            header: 'Kos',
-        },
-        {
-            accessorKey: 'room_number',
-            header: 'No. Kamar',
-            cell: ({ row }) => <div className="font-medium">Kamar {row.getValue('room_number')}</div>,
-        },
-        {
-            accessorKey: 'type_kamar.nama',
-            header: 'Tipe',
-            cell: ({ row }) => <div>{row.original.type_kamar?.nama || '-'}</div>,
-        },
-        {
-            accessorKey: 'type_kamar.harga',
-            header: 'Harga/Bulan',
-            cell: ({ row }) => <div>Rp{Number(row.original.type_kamar?.harga || 0).toLocaleString('id-ID')}</div>,
-        },
-        {
-            accessorKey: 'billing_date',
-            header: 'Tgl Tagihan',
-            cell: ({ row }) => (
-                <div className="flex items-center gap-1 text-sm">
-                    <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span>Setiap tanggal {row.getValue('billing_date')}</span>
-                </div>
-            ),
-        },
-        {
-            id: 'actions',
-            header: 'Aksi',
-            cell: ({ row }) => (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                            <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(row.original)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit Pengaturan
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            ),
-        },
-    ];
 
     const columnsPembayaran: ColumnDef<Invoice>[] = [
         {
@@ -174,10 +116,29 @@ export default function Tagihan({ rooms = [], invoices = [] }: Props) {
         },
         {
             id: 'amount',
-            header: 'Tagihan (Tarif)',
+            header: 'Total Tagihan',
             cell: ({ row }) => {
-                const amount = row.original.tenancy?.room?.type_kamar?.harga || row.original.amount;
-                return <div className="font-bold">Rp{Number(amount).toLocaleString('id-ID')}</div>;
+                const amount = row.original.amount;
+                const dailyRate = row.original.tenancy?.room?.type_kamar?.harga || 0;
+                const isPraPenghuni = row.original.tenancy?.penghuni?.status_penghuni === 'pra penghuni';
+
+                return (
+                    <div className="flex flex-col">
+                        <div className="font-bold text-[#664229] dark:text-[#D4A373]">
+                            Rp{Number(amount).toLocaleString('id-ID')}
+                        </div>
+                        {isPraPenghuni && dailyRate > 0 && (
+                            <div className="text-[10px] text-muted-foreground">
+                                {Number(dailyRate).toLocaleString('id-ID')}/hari (Pro-rata)
+                            </div>
+                        )}
+                        {!isPraPenghuni && dailyRate > 0 && (
+                            <div className="text-[10px] text-muted-foreground">
+                                {Number(dailyRate * 30).toLocaleString('id-ID')}/bln
+                            </div>
+                        )}
+                    </div>
+                );
             },
         },
         {
@@ -187,25 +148,36 @@ export default function Tagihan({ rooms = [], invoices = [] }: Props) {
         },
         {
             id: 'bukti',
-            header: 'Bukti Pembayaran',
+            header: 'Bukti & Struk',
             cell: ({ row }) => {
-                // Get the latest success payment with proof
                 const paymentWithProof = row.original.payments?.find(p => p.bukti_pembayaran);
-                return paymentWithProof ? (
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex items-center gap-2 h-8 text-xs bg-blue-50 hover:bg-blue-100 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800"
-                        onClick={() => setSelectedProof(paymentWithProof.bukti_pembayaran)}
-                    >
-                        <Eye className="h-3 w-3" />
-                        Lihat Bukti
-                    </Button>
-                ) : (
-                    <span className="text-xs text-muted-foreground italic flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        Belum ada bukti
-                    </span>
+                const latestPayment = row.original.payments?.[0];
+                const isLunas = row.original.status === 'lunas';
+                return (
+                    <div className="flex flex-col gap-1.5">
+                        {paymentWithProof ? (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex items-center gap-2 h-7 text-xs bg-blue-50 hover:bg-blue-100 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800"
+                                onClick={() => setSelectedProof(paymentWithProof.bukti_pembayaran)}
+                            >
+                                <Eye className="h-3 w-3" />
+                                Lihat Bukti
+                            </Button>
+                        ) : null}
+                        {isLunas && latestPayment && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex items-center gap-2 h-7 text-xs border-[#664229] text-[#664229] hover:bg-[#664229]/10"
+                                onClick={() => window.open(`/payment/receipt/${latestPayment.id}`, '_blank')}
+                            >
+                                <FileText className="h-3 w-3" />
+                                Cetak Struk
+                            </Button>
+                        )}
+                    </div>
                 );
             },
         },
@@ -232,74 +204,28 @@ export default function Tagihan({ rooms = [], invoices = [] }: Props) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Kelola Tagihan & Pembayaran" />
+            <Head title="Monitoring Pembayaran" />
             <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4 md:p-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Tagihan & Pembayaran</h1>
+                        <h1 className="text-2xl font-bold text-gray-900">Monitoring Pembayaran</h1>
                         <p className="text-sm text-muted-foreground mt-1">
-                            Kelola jadwal tagihan otomatis dan pantau status pembayaran penghuni
+                            Pantau status pembayaran tagihan semua penghuni kos secara real-time
                         </p>
                     </div>
                 </div>
-
-                {/* Tab Switcher */}
-                <div className="flex p-1 bg-gray-100 dark:bg-gray-800/50 rounded-xl w-fit border dark:border-gray-700">
-                    <button
-                        onClick={() => setActiveTab('pengaturan')}
-                        className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === 'pengaturan'
-                            ? 'bg-white dark:bg-gray-700 shadow-sm text-[#664229] dark:text-white'
-                            : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                            }`}
-                    >
-                        Pengaturan Tagihan
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('pembayaran')}
-                        className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === 'pembayaran'
-                            ? 'bg-white dark:bg-gray-700 shadow-sm text-[#664229] dark:text-white'
-                            : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                            }`}
-                    >
-                        Monitoring Pembayaran
-                    </button>
+                <div className="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border bg-white dark:bg-[#161615] shadow-sm">
+                    <div className="mb-4 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <CheckCircle2 className="h-5 w-5 text-green-600" />
+                            <h3 className="font-bold text-lg">Status Pembayaran Semua Penghuni</h3>
+                        </div>
+                    </div>
+                    <DataTable
+                        columns={columnsPembayaran}
+                        data={invoices}
+                    />
                 </div>
-
-                {activeTab === 'pengaturan' ? (
-                    <div className="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border bg-white dark:bg-[#161615] shadow-sm">
-                        <div className="mb-4 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <Clock className="h-5 w-5 text-[#664229]" />
-                                <h3 className="font-bold">Jadwal Tagihan Kamar</h3>
-                            </div>
-                        </div>
-                        <DataTable
-                            columns={columnsPengaturan}
-                            data={billingRooms}
-                            headerAction={
-                                <Link href="/admin/tagihan/create">
-                                    <Button className="bg-[#664229] hover:bg-[#664229]/90 text-white">
-                                        <Plus className="h-4 w-4 mr-2" />
-                                        Atur Jadwal Baru
-                                    </Button>
-                                </Link>
-                            }
-                        />
-                    </div>
-                ) : (
-                    <div className="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border bg-white dark:bg-[#161615] shadow-sm">
-                        <div className="mb-4 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <CheckCircle2 className="h-5 w-5 text-green-600" />
-                                <h3 className="font-bold">Status Pembayaran Semua Penghuni</h3>
-                            </div>
-                        </div>
-                        <DataTable
-                            columns={columnsPembayaran}
-                            data={invoices}
-                        />
-                    </div>
-                )}
 
                 {/* Proof of Payment Dialog */}
                 <Dialog open={!!selectedProof} onOpenChange={(open) => !open && setSelectedProof(null)}>

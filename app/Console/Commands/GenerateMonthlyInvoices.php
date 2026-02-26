@@ -31,7 +31,7 @@ class GenerateMonthlyInvoices extends Command
         $this->info("Checking rooms with billing_date: {$today}");
 
         $rooms = Room::where('billing_date', $today)
-            ->where('status', 'terisi')
+            ->where('status', 'ditempati')
             ->with(['typeKamar', 'currentPenyewaan'])
             ->get();
 
@@ -52,14 +52,24 @@ class GenerateMonthlyInvoices extends Command
                 ->exists();
 
             if (!$exists) {
-                $monthlyRate = $room->typeKamar ? $room->typeKamar->harga : 0;
+                $dailyRate = $room->typeKamar ? $room->typeKamar->harga : 0;
+                
+                // Determine rate based on status_penghuni
+                $penghuni = $tenancy->penghuni;
+                if ($penghuni && $penghuni->status_penghuni === 'penghuni') {
+                    $amount = $dailyRate * 30; // Monthly rate
+                } else {
+                    // Charge for the full month at daily rate for pra-penghuni
+                    $daysInMonth = now()->daysInMonth;
+                    $amount = $dailyRate * $daysInMonth;
+                }
                 
                 // Business rule: Due date is the 10th of the current month
                 $dueDate = now()->startOfMonth()->addDays(9)->toDateString();
 
                 Invoice::create([
                     'tenancy_id' => $tenancy->id,
-                    'amount' => $monthlyRate,
+                    'amount' => $amount,
                     'due_date' => $dueDate,
                     'billing_period' => $billingPeriod,
                     'status' => 'belum_dibayar',

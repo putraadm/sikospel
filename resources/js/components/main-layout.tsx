@@ -88,11 +88,7 @@ export default function MainLayout({ children, breadcrumbs = [] }: Props) {
                                             Masuk
                                         </Button>
                                     </Link>
-                                    <Link href="/register">
-                                        <Button className="h-11 px-8 rounded-2xl bg-primary hover:bg-[#523521] text-white font-black text-sm tracking-tight shadow-[0_8px_20px_-6px_rgba(102,66,41,0.4)] hover:shadow-[0_12px_25px_-4px_rgba(102,66,41,0.5)] transition-all hover:-translate-y-0.5 border-none">
-                                            Daftar Gratis
-                                        </Button>
-                                    </Link>
+
                                 </div>
                             )}
                         </div>

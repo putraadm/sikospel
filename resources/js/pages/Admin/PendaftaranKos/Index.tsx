@@ -24,11 +24,12 @@ interface PendaftaranKos {
         name: string;
         address: string;
     };
+    type_kamar?: {
+        nama: string;
+        harga: number;
+    };
     assigned_room?: {
         room_number: string;
-        type_kamar?: {
-            harga: number;
-        };
     };
     created_at: string;
 }
@@ -73,17 +74,29 @@ export default function Index({ pendaftaranKos }: Props) {
             ),
         },
         {
-            accessorKey: 'assigned_room',
-            header: 'Kamar',
+            accessorKey: 'type_kamar',
+            header: 'Pilihan Tipe',
             cell: ({ row }) => {
-                const room = row.original.assigned_room;
-                return room ? (
+                const type = row.original.type_kamar;
+                return type ? (
                     <div>
-                        <div className="font-medium">Kamar {room.room_number}</div>
-                        <div className="text-sm text-muted-foreground">Rp{Number(room.type_kamar?.harga || 0).toLocaleString()}</div>
+                        <div className="font-medium">{type.nama}</div>
+                        <div className="text-sm text-muted-foreground">Rp{Number(type.harga || 0).toLocaleString()}</div>
                     </div>
                 ) : (
-                    <span className="text-muted-foreground">Belum ditentukan</span>
+                    <span className="text-muted-foreground">-</span>
+                );
+            },
+        },
+        {
+            accessorKey: 'assigned_room',
+            header: 'Kamar Terpilih',
+            cell: ({ row }) => {
+                const room = row.original.assigned_room as any;
+                return room ? (
+                    <Badge variant="outline" className="font-bold">No. {room.room_number}</Badge>
+                ) : (
+                    <span className="text-muted-foreground italic text-xs">Menunggu Penempatan</span>
                 );
             },
         },

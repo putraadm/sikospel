@@ -22,7 +22,7 @@ class PenghuniTagihanController extends Controller
                 ->pluck('id');
 
             $invoices = Invoice::whereIn('tenancy_id', $penyewaanIds)
-                ->with(['tenancy.room.kos'])
+                ->with(['tenancy.room.kos', 'payments'])
                 ->orderByDesc('due_date')
                 ->get();
         }

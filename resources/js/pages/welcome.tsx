@@ -114,11 +114,6 @@ export default function Welcome({
                                         <ArrowRight className="ml-2 size-6 transition-transform group-hover:translate-x-1" />
                                     </Button>
                                 </Link>
-                                <Link href="#">
-                                    <Button variant="outline" size="lg" className="h-16 px-12 text-lg border-neutral-200 bg-white/30 backdrop-blur-sm rounded-2xl hover:bg-white/80 dark:border-neutral-800 dark:bg-white/5 dark:hover:bg-white/10 transition-all">
-                                        Daftarkan Properti
-                                    </Button>
-                                </Link>
                             </div>
 
                             {/* Trust Badge / Info Section */}

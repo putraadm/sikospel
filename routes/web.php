@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\AdminFeedbackController;
 use App\Http\Controllers\AdminKamarController;
+use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\AdminKosController;
 use App\Http\Controllers\AdminPemilikController;
 use App\Http\Controllers\AdminPendaftaranKosController;
@@ -8,6 +10,7 @@ use App\Http\Controllers\AdminPenghuniController;
 use App\Http\Controllers\AdminRoleController;
 use App\Http\Controllers\AdminTypeKamarController;
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\FinancialReportController;
 use App\Http\Controllers\PenghuniDashboardController;
 use App\Http\Controllers\PenghuniTagihanController;
 use App\Http\Controllers\PublicKosController;
@@ -58,6 +61,7 @@ Route::get('kos/{slug}', [PublicKosController::class, 'show'])->name('public.kos
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('payment/token', [App\Http\Controllers\PaymentController::class, 'getSnapToken'])->name('payment.token');
     Route::post('payment/status', [App\Http\Controllers\PaymentController::class, 'checkStatus'])->name('payment.status');
+    Route::get('payment/receipt/{id}', [ReceiptController::class, 'print'])->name('payment.receipt');
 
     Route::get('dashboard', function () {
         $user = auth()->user();
@@ -124,10 +128,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::resource('kos', AdminKosController::class);
             Route::resource('type-kamar', AdminTypeKamarController::class);
             Route::resource('room', AdminKamarController::class);
-            Route::delete('room-image/{id}', [AdminKamarController::class, 'deleteImage'])->name('admin.room-image.destroy');
+            Route::delete('room-image/{id}', [AdminTypeKamarController::class, 'deleteImage'])->name('admin.room-image.destroy');
+            
+            // Laporan Keuangan
+            Route::get('laporan-keuangan', [FinancialReportController::class, 'index'])->name('admin.laporan-keuangan.index');
+            Route::get('laporan-keuangan/export-pdf', [FinancialReportController::class, 'exportPdf'])->name('admin.laporan-keuangan.export-pdf');
+            Route::get('laporan-keuangan/export-excel', [FinancialReportController::class, 'exportExcel'])->name('admin.laporan-keuangan.export-excel');
+
             Route::get('tagihan', function () {
                 return Inertia::render('admin/Tagihan/Index', [
-                    'rooms' => Room::with(['typeKamar', 'kos'])->get(),
                     'invoices' => Invoice::with(['tenancy.penghuni', 'tenancy.room.kos', 'tenancy.room.typeKamar', 'payments'])->latest()->get(),
                 ]);
             });
@@ -155,12 +164,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
                 return redirect()->route('admin.tagihan.index')->with('success', 'Pengaturan tagihan berhasil disimpan.');
             })->name('admin.tagihan.index');
+            Route::get('feedback', [AdminFeedbackController::class, 'index'])->name('admin.feedback.index');
         });
     });
 });
 
 
 require __DIR__.'/settings.php';
+
+// Receipt Print (Authenticated Users)
+Route::middleware(['auth'])->group(function () {
+    Route::get('payment/receipt/{id}', [ReceiptController::class, 'print'])->name('payment.receipt');
+});
 
 // Midtrans Callback (Public)
 Route::post('midtrans/callback', [App\Http\Controllers\PaymentController::class, 'callback'])->name('midtrans.callback');

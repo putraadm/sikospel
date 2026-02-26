@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Role;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 
@@ -66,7 +67,26 @@ class AdminUserController extends Controller
 
     public function destroy(User $user)
     {
-        $user->delete();
+        DB::transaction(function () use ($user) {
+            if ($user->penghuni) {
+                // Reset room status to 'tersedia' for all active penyewaan
+                $user->penghuni->penyewaan()
+                    ->where('status', 'aktif')
+                    ->with('room')
+                    ->get()
+                    ->each(function ($penyewaan) {
+                        if ($penyewaan->room) {
+                            $penyewaan->room->update(['status' => 'tersedia']);
+                        }
+                    });
+
+                // Delete all penyewaan records, then penghuni
+                $user->penghuni->penyewaan()->delete();
+                $user->penghuni()->delete();
+            }
+
+            $user->delete();
+        });
 
         return redirect()->back()->with('success', 'User berhasil dihapus.');
     }

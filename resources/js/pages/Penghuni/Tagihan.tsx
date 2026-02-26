@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { CreditCard, Calendar, AlertTriangle, CheckCircle, Clock, Loader2 } from 'lucide-react';
+import { CreditCard, Calendar, AlertTriangle, CheckCircle, Clock, Loader2, FileText } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -16,6 +16,8 @@ import {
     DialogTitle,
     DialogFooter,
 } from "@/components/ui/dialog";
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -37,6 +39,10 @@ interface InvoiceData {
             };
         };
     };
+    payments?: {
+        id: number;
+        status: string;
+    }[];
 }
 
 interface Props {
@@ -96,6 +102,11 @@ export default function Tagihan({ invoices, midtrans_client_key, midtrans_is_pro
     };
 
     const [loadingInvoiceId, setLoadingInvoiceId] = useState<number | null>(null);
+    const [feedbacks, setFeedbacks] = useState<Record<number, string>>({});
+
+    const handleFeedbackChange = (invoiceId: number, value: string) => {
+        setFeedbacks(prev => ({ ...prev, [invoiceId]: value }));
+    };
 
     useEffect(() => {
         // Load Midtrans Snap Script
@@ -116,6 +127,7 @@ export default function Tagihan({ invoices, midtrans_client_key, midtrans_is_pro
         try {
             const response = await axios.post('/payment/token', {
                 invoice_id: invoiceId,
+                feedback: feedbacks[invoiceId] || '',
             });
 
             const snapToken = response.data.snap_token;
@@ -151,6 +163,10 @@ export default function Tagihan({ invoices, midtrans_client_key, midtrans_is_pro
         } finally {
             setLoadingInvoiceId(null);
         }
+    };
+
+    const handlePrintReceipt = (paymentId: number) => {
+        window.open(`/payment/receipt/${paymentId}`, '_blank');
     };
 
     const belumDibayar = invoices.filter(i => i.status === 'belum_dibayar' || i.status === 'terlambat');
@@ -232,20 +248,46 @@ export default function Tagihan({ invoices, midtrans_client_key, midtrans_is_pro
                                                 <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
                                                     {formatCurrency(Number(invoice.amount))}
                                                 </p>
-                                                {(invoice.status === 'belum_dibayar' || invoice.status === 'terlambat') && (
+                                                {invoice.status === 'lunas' && invoice.payments && invoice.payments.length > 0 && (
                                                     <Button
                                                         size="sm"
-                                                        className="bg-[#664229] hover:bg-[#4d321f]"
-                                                        onClick={() => handlePayment(invoice.id)}
-                                                        disabled={loadingInvoiceId === invoice.id}
+                                                        variant="outline"
+                                                        className="mt-2 border-[#664229] text-[#664229] hover:bg-[#664229]/5"
+                                                        onClick={() => handlePrintReceipt(invoice.payments![0].id)}
                                                     >
-                                                        {loadingInvoiceId === invoice.id ? (
-                                                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                                        ) : (
-                                                            <CreditCard className="h-4 w-4 mr-2" />
-                                                        )}
-                                                        Bayar Sekarang
+                                                        <FileText className="h-4 w-4 mr-2" />
+                                                        Cetak Struk
                                                     </Button>
+                                                )}
+                                                {(invoice.status === 'belum_dibayar' || invoice.status === 'terlambat') && (
+                                                    <div className="mt-4 space-y-3 w-full sm:max-w-xs ml-auto">
+                                                        <div className="space-y-1.5">
+                                                            <Label htmlFor={`feedback-${invoice.id}`} className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                                                                Kritik & Saran (Opsional)
+                                                            </Label>
+                                                            <Textarea
+                                                                id={`feedback-${invoice.id}`}
+                                                                placeholder="Berikan masukan Anda..."
+                                                                className="text-xs min-h-[60px] resize-none"
+                                                                value={feedbacks[invoice.id] || ''}
+                                                                onChange={(e) => handleFeedbackChange(invoice.id, e.target.value)}
+                                                                maxLength={255}
+                                                            />
+                                                        </div>
+                                                        <Button
+                                                            size="sm"
+                                                            className="w-full bg-[#664229] hover:bg-[#4d321f]"
+                                                            onClick={() => handlePayment(invoice.id)}
+                                                            disabled={loadingInvoiceId === invoice.id}
+                                                        >
+                                                            {loadingInvoiceId === invoice.id ? (
+                                                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                            ) : (
+                                                                <CreditCard className="h-4 w-4 mr-2" />
+                                                            )}
+                                                            Bayar Sekarang
+                                                        </Button>
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>

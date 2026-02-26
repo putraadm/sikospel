@@ -19,7 +19,7 @@ class AdminPendaftaranKosController extends Controller
 {
     public function index()
     {
-        $pendaftaranKos = PendaftaranKos::with(['kos', 'assignedRoom.typeKamar'])->get();
+        $pendaftaranKos = PendaftaranKos::with(['kos', 'assignedRoom.typeKamar', 'typeKamar'])->get();
 
         return Inertia::render('Admin/PendaftaranKos/Index', [
             'pendaftaranKos' => $pendaftaranKos,
@@ -28,9 +28,10 @@ class AdminPendaftaranKosController extends Controller
 
     public function show(PendaftaranKos $pendaftaranKos)
     {
-        $pendaftaranKos->load(['kos.rooms.typeKamar', 'assignedRoom.typeKamar']);
+        $pendaftaranKos->load(['kos.rooms.typeKamar', 'assignedRoom.typeKamar', 'typeKamar']);
 
         $availableRooms = Room::where('kos_id', $pendaftaranKos->kos_id)
+            ->where('type_kamar_id', $pendaftaranKos->type_kamar_id)
             ->with('typeKamar')
             ->where('status', 'tersedia')
             ->get();
@@ -108,29 +109,42 @@ class AdminPendaftaranKosController extends Controller
                 $room->update(['status' => 'ditempati']);
 
                 $room->load('typeKamar');
-                $monthlyRate = $room->typeKamar ? $room->typeKamar->harga : 0;
+                $dailyRate = $room->typeKamar ? $room->typeKamar->harga : 0;
                 
-                $billingPeriod = now()->startOfMonth();
-                $dueDate = now()->startOfMonth()->addDays(9);
+                // Fetch the status from the newly created penghuni (which defaults to 'pra penghuni')
+                $statusPenghuni = $user->penghuni->status_penghuni;
+                
+                if ($statusPenghuni === 'penghuni') {
+                    $amount = $dailyRate * 30; // Monthly rate
+                } else {
+                    // Calculate remaining days in the month for pra-penghuni
+                    $start = \Carbon\Carbon::parse($startDate);
+                    $daysInMonth = $start->daysInMonth;
+                    $remainingDays = $daysInMonth - $start->day + 1;
+                    $amount = $dailyRate * $remainingDays;
+                }
+                
+                $billingPeriod = \Carbon\Carbon::parse($startDate)->startOfMonth();
+                $dueDate = $billingPeriod->copy()->addDays(9);
                 Invoice::create([
                     'tenancy_id' => $penyewaan->id,
-                    'amount' => $monthlyRate,
+                    'amount' => $amount,
                     'due_date' => $dueDate,
                     'billing_period' => $billingPeriod,
                     'status' => 'belum_dibayar',
                 ]);
 
-                $generatedCredentials = [
-                    'username' => $username,
-                    'email' => $email,
-                    'password' => $plainPassword,
-                ];
             }
 
             return redirect()
                 ->route('pendaftaran-kos.show', $pendaftaranKos->id)
                 ->with('success', 'Status pendaftaran berhasil diperbarui.')
-                ->with('generated_credentials', $generatedCredentials);
+                ->with('new_user_account', [
+                    'username' => $username,
+                    'email' => $email,
+                    'password' => $plainPassword,
+                    'name' => $penghuni->name
+                ]);
         });
     }
 }
