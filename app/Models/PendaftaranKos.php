@@ -16,6 +16,7 @@ class PendaftaranKos extends Model
         'file_path_ktp',
         'file_path_kk',
         'start_date',
+        'type_kamar_id',
         'assigned_room_id',
         'status',
         'generated_password_plain',
@@ -36,6 +37,11 @@ class PendaftaranKos extends Model
     public function calonPenghuni()
     {
         return $this->belongsTo(Penghuni::class, 'calon_penghuni_id', 'user_id');
+    }
+
+    public function typeKamar()
+    {
+        return $this->belongsTo(TypeKamar::class, 'type_kamar_id');
     }
 
     public function assignedRoom()

@@ -27,9 +27,10 @@ class Room extends Model
         return $this->belongsTo(TypeKamar::class, 'type_kamar_id', 'id');
     }
 
-    public function images()
+    // Accessor to get images from typeKamar
+    public function getImagesAttribute()
     {
-        return $this->hasMany(RoomImage::class, 'room_id', 'id');
+        return $this->typeKamar ? $this->typeKamar->images : collect([]);
     }
 
     public function currentPenyewaan()

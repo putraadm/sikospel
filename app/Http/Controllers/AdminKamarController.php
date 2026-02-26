@@ -16,7 +16,7 @@ class AdminKamarController extends Controller
 {
     public function index()
     {
-        $rooms = Room::with(['kos.owner.user', 'typeKamar', 'images'])->get();
+        $rooms = Room::with(['kos.owner.user', 'typeKamar'])->get();
         $kos = Kos::with('owner.user')->get();
         $typeKamars = TypeKamar::all();
         
@@ -39,30 +39,7 @@ class AdminKamarController extends Controller
 
         $data = $request->all();
 
-        $data = $request->all();
-
-        $room = Room::create($data);
-
-        if ($request->hasFile('images')) {
-            $manager = new ImageManager(new Driver());
-            foreach ($request->file('images') as $imgFile) {
-                $imageName = time() . '_' . uniqid() . '.' . $imgFile->getClientOriginalExtension();
-                $image = $manager->read($imgFile);
-                
-                if ($image->width() > 800) {
-                    $image->scale(width: 800);
-                }
-                
-                $path = 'room-images/' . $imageName;
-                $encoded = $image->toJpeg(quality: 80); 
-                Storage::disk('public')->put($path, (string) $encoded);
-
-                RoomImage::create([
-                    'room_id' => $room->id,
-                    'gambar' => $path,
-                ]);
-            }
-        }
+        Room::create($data);
 
         return redirect()->back()->with('success', 'Kamar berhasil dibuat.');
     }
@@ -82,27 +59,6 @@ class AdminKamarController extends Controller
 
         $room->update($data);
 
-        if ($request->hasFile('images')) {
-            $manager = new ImageManager(new Driver());
-            foreach ($request->file('images') as $imgFile) {
-                $imageName = time() . '_' . uniqid() . '.' . $imgFile->getClientOriginalExtension();
-                $image = $manager->read($imgFile);
-                
-                if ($image->width() > 800) {
-                    $image->scale(width: 800);
-                }
-                
-                $path = 'room-images/' . $imageName;
-                $encoded = $image->toJpeg(quality: 80); 
-                Storage::disk('public')->put($path, (string) $encoded);
-
-                RoomImage::create([
-                    'room_id' => $room->id,
-                    'gambar' => $path,
-                ]);
-            }
-        }
-
         return redirect()->back()->with('success', 'Kamar berhasil diperbarui.');
     }
 
@@ -110,27 +66,8 @@ class AdminKamarController extends Controller
     {
         $room = Room::findOrFail($id);
         
-        // Delete images from storage
-        foreach ($room->images as $image) {
-            Storage::disk('public')->delete($image->gambar);
-            $image->delete();
-        }
-        
-        if ($room->image) {
-            Storage::disk('public')->delete($room->image);
-        }
-
         $room->delete();
 
         return redirect()->back()->with('success', 'Kamar berhasil dihapus.');
-    }
-
-    public function deleteImage($id)
-    {
-        $image = RoomImage::findOrFail($id);
-        Storage::disk('public')->delete($image->gambar);
-        $image->delete();
-
-        return redirect()->back()->with('success', 'Gambar berhasil dihapus.');
     }
 }

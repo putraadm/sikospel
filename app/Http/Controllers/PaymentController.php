@@ -24,6 +24,7 @@ class PaymentController extends Controller
     {
         $request->validate([
             'invoice_id' => 'required|exists:invoices,id',
+            'feedback' => 'nullable|string|max:255',
         ]);
 
         $invoice = Invoice::with(['tenancy.penghuni.user'])->findOrFail($request->invoice_id);
@@ -50,6 +51,7 @@ class PaymentController extends Controller
                     'name' => 'Tagihan Kos - Periode ' . $invoice->billing_period->format('M Y'),
                 ]
             ],
+            'custom_field1' => $request->feedback,
             'callbacks' => [
                 'finish' => route('penghuni.tagihan', ['payment_status' => 'success']),
                 'unfinish' => route('penghuni.tagihan', ['payment_status' => 'pending']),
@@ -103,6 +105,8 @@ class PaymentController extends Controller
             throw new \Exception("Order ID is missing from notification data.");
         }
 
+        $feedback = $isObject ? ($notification->custom_field1 ?? null) : ($notification['custom_field1'] ?? null);
+
         $invoiceId = null;
         if (preg_match('/INV-(\d+)/i', $orderId, $matches)) {
             $invoiceId = $matches[1];
@@ -119,7 +123,7 @@ class PaymentController extends Controller
             throw new \Exception("Could not extract valid Invoice ID from Order ID: " . $orderId);
         }
 
-        DB::transaction(function () use ($invoiceId, $transaction, $type, $midtransTransactionId, $grossAmount, $fraud) {
+        DB::transaction(function () use ($invoiceId, $transaction, $type, $midtransTransactionId, $grossAmount, $fraud, $feedback) {
             $invoice = Invoice::findOrFail($invoiceId);
 
             $paymentStatus = 'pending';
@@ -150,6 +154,7 @@ class PaymentController extends Controller
                     'method' => $type,
                     'sumber' => 'midtrans',
                     'status' => $paymentStatus,
+                    'feedback' => $feedback,
                 ]
             );
         });

@@ -15,6 +15,7 @@ class Payment extends Model
         'transaction_id',
         'status',
         'bukti_pembayaran',
+        'feedback',
     ];
 
     protected $casts = [

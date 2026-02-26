@@ -13,6 +13,7 @@ import { DataTable } from '@/components/ui/data-table';
 import { ConfirmDialog } from '@/components/app/confirm-dialog';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
+import { cn } from '@/lib/utils';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -151,10 +152,26 @@ export default function Index({ users, roles }: Props) {
             header: 'Role',
             cell: ({ row }) => {
                 const role = row.original.role;
-                return role ? (
-                    <Badge variant="secondary">{role.name}</Badge>
-                ) : (
-                    <span className="text-muted-foreground">Tidak ada</span>
+                if (!role) return <span className="text-muted-foreground">Tidak ada</span>;
+
+                const roleName = role.name.toLowerCase();
+
+                let badgeStyles = "font-semibold border-none shadow-none capitalize";
+
+                if (roleName === 'superadmin') {
+                    badgeStyles = cn(badgeStyles, "bg-slate-900 text-slate-50 hover:bg-slate-900/90");
+                } else if (roleName === 'pemilik') {
+                    badgeStyles = cn(badgeStyles, "bg-amber-100 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400");
+                } else if (roleName === 'penghuni') {
+                    badgeStyles = cn(badgeStyles, "bg-blue-100 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400");
+                } else {
+                    badgeStyles = cn(badgeStyles, "bg-secondary text-secondary-foreground");
+                }
+
+                return (
+                    <Badge className={badgeStyles}>
+                        {role.name}
+                    </Badge>
                 );
             },
         },

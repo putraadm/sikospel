@@ -70,6 +70,7 @@ export interface TypeKamar {
     nama: string;
     deskripsi: string | null;
     harga: number;
+    images?: { id: number; gambar: string }[];
 }
 
 export interface Room {
@@ -79,10 +80,8 @@ export interface Room {
     type_kamar_id: number | null;
     status: string;
     description: string | null;
-    image: string | null;
     kos: Kos;
     type_kamar?: TypeKamar;
-    images?: { id: number; gambar: string }[];
 }
 
 declare global {

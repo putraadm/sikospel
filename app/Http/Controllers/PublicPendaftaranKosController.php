@@ -17,6 +17,8 @@ class PublicPendaftaranKosController extends Controller
             $q->with('typeKamar')->select('id', 'kos_id', 'room_number', 'type_kamar_id', 'status');
         }])->get();
 
+        $typeKamars = \App\Models\TypeKamar::with('images')->get();
+
         $selectedKos = null;
         if ($slug) {
             $selectedKos = Kos::where('slug', $slug)->first();
@@ -27,6 +29,7 @@ class PublicPendaftaranKosController extends Controller
         return Inertia::render('Public/Pendaftaran/Create', [
             'kosList' => $kos,
             'selectedKos' => $selectedKos,
+            'typeKamars' => $typeKamars,
         ]);
     }
 
@@ -34,6 +37,7 @@ class PublicPendaftaranKosController extends Controller
     {
         $request->validate([
             'kos_id' => 'required|exists:kos,id',
+            'type_kamar_id' => 'required|exists:type_kamars,id',
             'start_date' => 'required|date|after_or_equal:today',
             'notes' => 'nullable|string|max:1000',
             'nama' => 'required|string|max:255',
@@ -49,6 +53,7 @@ class PublicPendaftaranKosController extends Controller
 
         $pendaftaran = PendaftaranKos::create([
             'kos_id' => $request->kos_id,
+            'type_kamar_id' => $request->type_kamar_id,
             'nama' => $request->nama,
             'no_wa' => $request->no_wa,
             'alamat' => $request->alamat,
@@ -65,7 +70,7 @@ class PublicPendaftaranKosController extends Controller
 
     public function success($id)
     {
-        $pendaftaran = PendaftaranKos::with(['kos', 'assignedRoom'])->find($id);
+        $pendaftaran = PendaftaranKos::with(['kos', 'assignedRoom.typeKamar'])->find($id);
 
         if (!$pendaftaran) {
             return redirect()->route('home');

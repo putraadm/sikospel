@@ -1,6 +1,6 @@
 import { Head, useForm, router } from '@inertiajs/react';
-import { Plus, Trash2, Edit, MoreHorizontal, Image as ImageIcon, X } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { Plus, Trash2, Edit, MoreHorizontal } from 'lucide-react';
+import { useState } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,11 +38,7 @@ export default function Index({ rooms, kos, typeKamars }: Props) {
         room_number: '',
         type_kamar_id: '',
         status: 'tersedia',
-        images: [] as File[],
     });
-
-    const [previews, setPreviews] = useState<string[]>([]);
-    const createFileInputRef = useRef<HTMLInputElement>(null);
 
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
@@ -51,13 +47,8 @@ export default function Index({ rooms, kos, typeKamars }: Props) {
         room_number: '',
         type_kamar_id: '',
         status: '',
-        images: [] as File[],
         _method: 'PUT',
     });
-
-    const [editPreviews, setEditPreviews] = useState<string[]>([]);
-    const [existingImages, setExistingImages] = useState<any[]>([]);
-    const editFileInputRef = useRef<HTMLInputElement>(null);
 
     // Delete confirmation state
     const [confirmOpen, setConfirmOpen] = useState(false);
@@ -70,61 +61,9 @@ export default function Index({ rooms, kos, typeKamars }: Props) {
             forceFormData: true,
             onSuccess: () => {
                 reset();
-                setPreviews([]);
                 setShowCreateModal(false);
             },
         });
-    };
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean = false) => {
-        const files = Array.from(e.target.files || []);
-        if (files.length === 0) return;
-
-        if (isEdit) {
-            const newImages = [...editData.images, ...files];
-            setEditData({ ...editData, images: newImages });
-
-            const newPreviews = files.map(file => URL.createObjectURL(file));
-            setEditPreviews([...editPreviews, ...newPreviews]);
-        } else {
-            const newImages = [...data.images, ...files];
-            setData('images', newImages);
-
-            const newPreviews = files.map(file => URL.createObjectURL(file));
-            setPreviews([...previews, ...newPreviews]);
-        }
-    };
-
-    const removeFile = (index: number, isEdit: boolean = false) => {
-        if (isEdit) {
-            const newImages = [...editData.images];
-            newImages.splice(index, 1);
-            setEditData({ ...editData, images: newImages });
-
-            const newPreviews = [...editPreviews];
-            URL.revokeObjectURL(newPreviews[index]);
-            newPreviews.splice(index, 1);
-            setEditPreviews(newPreviews);
-        } else {
-            const newImages = [...data.images];
-            newImages.splice(index, 1);
-            setData('images', newImages);
-
-            const newPreviews = [...previews];
-            URL.revokeObjectURL(newPreviews[index]);
-            newPreviews.splice(index, 1);
-            setPreviews(newPreviews);
-        }
-    };
-
-    const deleteExistingImage = (imageId: number) => {
-        if (confirm('Apakah Anda yakin ingin menghapus gambar ini?')) {
-            router.delete(`/admin/room-image/${imageId}`, {
-                onSuccess: () => {
-                    setExistingImages(existingImages.filter(img => img.id !== imageId));
-                }
-            });
-        }
     };
 
     const handleEdit = (item: Room) => {
@@ -134,11 +73,8 @@ export default function Index({ rooms, kos, typeKamars }: Props) {
             room_number: item.room_number,
             type_kamar_id: item.type_kamar_id?.toString() || '',
             status: item.status,
-            images: [],
             _method: 'PUT',
         });
-        setEditPreviews([]);
-        setExistingImages(item.images || []);
     };
 
     const handleCancelEdit = () => {
@@ -148,7 +84,6 @@ export default function Index({ rooms, kos, typeKamars }: Props) {
             room_number: '',
             type_kamar_id: '',
             status: '',
-            images: [],
             _method: 'PUT',
         });
     };
@@ -158,14 +93,11 @@ export default function Index({ rooms, kos, typeKamars }: Props) {
             forceFormData: true,
             onSuccess: () => {
                 setEditingId(null);
-                setEditPreviews([]);
-                setExistingImages([]);
                 setEditData({
                     kos_id: '',
                     room_number: '',
                     type_kamar_id: '',
                     status: '',
-                    images: [],
                     _method: 'PUT',
                 });
             },
@@ -195,19 +127,6 @@ export default function Index({ rooms, kos, typeKamars }: Props) {
 
     const columns: ColumnDef<Room>[] = [
         {
-            accessorKey: 'images',
-            header: 'Foto',
-            cell: ({ row }) => (
-                <div className="size-12 overflow-hidden rounded-md border bg-neutral-100">
-                    {row.original.images?.[0] ? (
-                        <img src={`/storage/${row.original.images[0].gambar}`} alt="" className="h-full w-full object-cover" />
-                    ) : (
-                        <div className="flex h-full w-full items-center justify-center text-[10px] text-neutral-400">No Image</div>
-                    )}
-                </div>
-            ),
-        },
-        {
             accessorKey: 'room_number',
             header: 'No. Kamar',
             cell: ({ row }) => <div className="font-medium text-primary">{row.getValue('room_number')}</div>,
@@ -217,23 +136,6 @@ export default function Index({ rooms, kos, typeKamars }: Props) {
             header: 'Kos',
         },
         {
-            accessorKey: 'images',
-            header: 'Gambar',
-            cell: ({ row }) => (
-                <div className="flex -space-x-2 overflow-hidden">
-                    {(row.original.images || []).map((img: any, idx: number) => (
-                        <img
-                            key={img.id}
-                            src={`/storage/${img.gambar}`}
-                            alt={`Room ${idx}`}
-                            className="inline-block h-8 w-8 rounded-full ring-2 ring-background object-cover"
-                        />
-                    ))}
-                    {(!row.original.images || row.original.images.length === 0) && <span className="text-muted-foreground text-xs">No images</span>}
-                </div>
-            ),
-        },
-        {
             accessorKey: 'type_kamar',
             header: 'Tipe Kamar',
             cell: ({ row }) => <div className="font-medium">{row.original.type_kamar?.nama || '-'}</div>,
@@ -241,7 +143,7 @@ export default function Index({ rooms, kos, typeKamars }: Props) {
         {
             accessorKey: 'type_kamar.harga',
             header: 'Harga/Bulan',
-            cell: ({ row }) => <div>Rp{Number(row.original.type_kamar?.harga || 0).toLocaleString('id-ID')}</div>,
+            cell: ({ row }) => <div>Rp{(Number(row.original.type_kamar?.harga || 0) * 30).toLocaleString('id-ID')}</div>,
         },
         {
             accessorKey: 'status',
@@ -251,7 +153,7 @@ export default function Index({ rooms, kos, typeKamars }: Props) {
                 let variant: "default" | "secondary" | "destructive" | "outline" = "default";
 
                 if (status === 'tersedia') variant = "default";
-                else if (status === 'terisi') variant = "secondary";
+                else if (status === 'ditempati') variant = "secondary";
                 else if (status === 'perbaikan') variant = "destructive";
 
                 return <Badge variant={variant}>{status}</Badge>;
@@ -294,7 +196,7 @@ export default function Index({ rooms, kos, typeKamars }: Props) {
             <Head title="Room" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-bold">Kelola Room</h1>
+                    <h1 className="text-2xl font-bold">Kelola Kamar</h1>
                 </div>
 
                 <div className="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
@@ -314,7 +216,7 @@ export default function Index({ rooms, kos, typeKamars }: Props) {
                 <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>Tambah Room Baru</DialogTitle>
+                            <DialogTitle>Tambah Kamar Baru</DialogTitle>
                         </DialogHeader>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
@@ -371,45 +273,6 @@ export default function Index({ rooms, kos, typeKamars }: Props) {
                                     </SelectContent>
                                 </Select>
                                 {errors.status && <p className="text-sm text-red-600">{errors.status}</p>}
-                            </div>
-                            <div>
-                                <div className="flex items-center justify-between mb-2">
-                                    <Label htmlFor="images">Gambar Kamar Tambahan</Label>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="icon"
-                                        className="h-8 w-8 rounded-full"
-                                        onClick={() => createFileInputRef.current?.click()}
-                                    >
-                                        <Plus className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                                <input
-                                    id="images"
-                                    type="file"
-                                    multiple
-                                    className="hidden"
-                                    ref={createFileInputRef}
-                                    onChange={(e) => handleFileChange(e)}
-                                />
-                                {previews.length > 0 && (
-                                    <div className="grid grid-cols-4 gap-2 mt-2">
-                                        {previews.map((preview, index) => (
-                                            <div key={index} className="relative aspect-square rounded-md overflow-hidden border">
-                                                <img src={preview} alt="" className="h-full w-full object-cover" />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeFile(index)}
-                                                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors"
-                                                >
-                                                    <X className="h-3 w-3" />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                                {errors.images && <p className="text-sm text-red-600">{errors.images}</p>}
                             </div>
                             <div className="flex justify-end gap-2">
                                 <Button type="button" variant="outline" onClick={() => setShowCreateModal(false)}>
@@ -469,82 +332,7 @@ export default function Index({ rooms, kos, typeKamars }: Props) {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div>
-                                <Label htmlFor="edit-status">Status</Label>
-                                <Select value={editData.status} onValueChange={(value) => setEditData({ ...editData, status: value })}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Pilih Status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="tersedia">Tersedia</SelectItem>
-                                        <SelectItem value="terisi">Terisi</SelectItem>
-                                        <SelectItem value="perbaikan">Perbaikan</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div>
-                                <div className="flex items-center justify-between mb-2">
-                                    <Label htmlFor="edit-images">Tambah Gambar Baru</Label>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="icon"
-                                        className="h-8 w-8 rounded-full"
-                                        onClick={() => editFileInputRef.current?.click()}
-                                    >
-                                        <Plus className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                                <input
-                                    id="edit-images"
-                                    type="file"
-                                    multiple
-                                    className="hidden"
-                                    ref={editFileInputRef}
-                                    onChange={(e) => handleFileChange(e, true)}
-                                />
-
-                                {existingImages.length > 0 && (
-                                    <div className="mb-4">
-                                        <Label className="text-xs text-muted-foreground mb-2 block">Gambar Saat Ini:</Label>
-                                        <div className="grid grid-cols-4 gap-2">
-                                            {existingImages.map((img) => (
-                                                <div key={img.id} className="relative aspect-square rounded-md overflow-hidden border">
-                                                    <img src={`/storage/${img.gambar}`} alt="" className="h-full w-full object-cover" />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => deleteExistingImage(img.id)}
-                                                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors"
-                                                    >
-                                                        <Trash2 className="h-3 w-3" />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {editPreviews.length > 0 && (
-                                    <div>
-                                        <Label className="text-xs text-muted-foreground mb-2 block">Gambar Baru Ditambahkan:</Label>
-                                        <div className="grid grid-cols-4 gap-2">
-                                            {editPreviews.map((preview, index) => (
-                                                <div key={index} className="relative aspect-square rounded-md overflow-hidden border">
-                                                    <img src={preview} alt="" className="h-full w-full object-cover" />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeFile(index, true)}
-                                                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors"
-                                                    >
-                                                        <X className="h-3 w-3" />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="flex justify-end gap-2">
+                            <div className="flex justify-end gap-2 mt-4">
                                 <Button type="button" variant="outline" onClick={handleCancelEdit}>
                                     Batal
                                 </Button>

@@ -24,7 +24,11 @@ interface PenyewaanData {
     status: string;
     room: {
         room_number: string;
-        monthly_rate: number;
+        type_kamar?: {
+            id: number;
+            nama: string;
+            harga: number;
+        };
         kos: {
             name: string;
             address: string;
@@ -95,7 +99,7 @@ export default function Dashboard({ penghuni, penyewaan, tagihanAktif, totalTerb
                                     {penyewaan.room.room_number}
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    {formatCurrency(Number(penyewaan.room.monthly_rate))}/bulan
+                                    {formatCurrency(Number(penyewaan.room.type_kamar?.harga || 0))}/bulan
                                 </p>
                             </CardContent>
                         </Card>
@@ -187,7 +191,7 @@ export default function Dashboard({ penghuni, penyewaan, tagihanAktif, totalTerb
                                     </div>
                                     <div className="grid grid-cols-2 gap-1">
                                         <p className="text-sm text-muted-foreground">Biaya/Bulan</p>
-                                        <p className="text-sm font-medium">{formatCurrency(Number(penyewaan.room.monthly_rate))}</p>
+                                        <p className="text-sm font-medium">{formatCurrency(Number(penyewaan.room.type_kamar?.harga || 0))}</p>
                                     </div>
                                     <div className="grid grid-cols-2 gap-1">
                                         <p className="text-sm text-muted-foreground">Tanggal Masuk</p>

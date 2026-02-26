@@ -1,6 +1,6 @@
 import { Head, useForm, router } from '@inertiajs/react';
-import { Plus, Trash2, Edit, MoreHorizontal } from 'lucide-react';
-import { useState } from 'react';
+import { Plus, Trash2, Edit, MoreHorizontal, Image as ImageIcon, X } from 'lucide-react';
+import { useState, useRef } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
 
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,7 @@ interface TypeKamar {
     nama: string;
     deskripsi: string;
     harga: number;
+    images?: { id: number; gambar: string }[];
 }
 
 interface Props {
@@ -41,7 +42,11 @@ export default function Index({ typeKamars }: Props) {
         nama: '',
         deskripsi: '',
         harga: '',
+        images: [] as File[],
     });
+
+    const [previews, setPreviews] = useState<string[]>([]);
+    const createFileInputRef = useRef<HTMLInputElement>(null);
 
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
@@ -49,7 +54,13 @@ export default function Index({ typeKamars }: Props) {
         nama: '',
         deskripsi: '',
         harga: '',
+        images: [] as File[],
+        _method: 'PUT',
     });
+
+    const [editPreviews, setEditPreviews] = useState<string[]>([]);
+    const [existingImages, setExistingImages] = useState<any[]>([]);
+    const editFileInputRef = useRef<HTMLInputElement>(null);
 
     // Delete confirmation state
     const [confirmOpen, setConfirmOpen] = useState(false);
@@ -59,11 +70,64 @@ export default function Index({ typeKamars }: Props) {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         post('/admin/type-kamar', {
+            forceFormData: true,
             onSuccess: () => {
                 reset();
+                setPreviews([]);
                 setShowCreateModal(false);
             },
         });
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean = false) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        if (isEdit) {
+            const newImages = [...editData.images, ...files];
+            setEditData({ ...editData, images: newImages });
+
+            const newPreviews = files.map(file => URL.createObjectURL(file));
+            setEditPreviews([...editPreviews, ...newPreviews]);
+        } else {
+            const newImages = [...data.images, ...files];
+            setData('images', newImages);
+
+            const newPreviews = files.map(file => URL.createObjectURL(file));
+            setPreviews([...previews, ...newPreviews]);
+        }
+    };
+
+    const removeFile = (index: number, isEdit: boolean = false) => {
+        if (isEdit) {
+            const newImages = [...editData.images];
+            newImages.splice(index, 1);
+            setEditData({ ...editData, images: newImages });
+
+            const newPreviews = [...editPreviews];
+            URL.revokeObjectURL(newPreviews[index]);
+            newPreviews.splice(index, 1);
+            setEditPreviews(newPreviews);
+        } else {
+            const newImages = [...data.images];
+            newImages.splice(index, 1);
+            setData('images', newImages);
+
+            const newPreviews = [...previews];
+            URL.revokeObjectURL(newPreviews[index]);
+            newPreviews.splice(index, 1);
+            setPreviews(newPreviews);
+        }
+    };
+
+    const deleteExistingImage = (imageId: number) => {
+        if (confirm('Apakah Anda yakin ingin menghapus gambar ini?')) {
+            router.delete(`/admin/room-image/${imageId}`, {
+                onSuccess: () => {
+                    setExistingImages(existingImages.filter(img => img.id !== imageId));
+                }
+            });
+        }
     };
 
     const handleEdit = (item: TypeKamar) => {
@@ -72,7 +136,11 @@ export default function Index({ typeKamars }: Props) {
             nama: item.nama,
             deskripsi: item.deskripsi || '',
             harga: item.harga.toString(),
+            images: [],
+            _method: 'PUT',
         });
+        setEditPreviews([]);
+        setExistingImages(item.images || []);
     };
 
     const handleCancelEdit = () => {
@@ -81,17 +149,26 @@ export default function Index({ typeKamars }: Props) {
             nama: '',
             deskripsi: '',
             harga: '',
+            images: [],
+            _method: 'PUT',
         });
+        setEditPreviews([]);
+        setExistingImages([]);
     };
 
     const handleUpdate = (id: number) => {
-        router.put(`/admin/type-kamar/${id}`, editData, {
+        router.post(`/admin/type-kamar/${id}`, editData, {
+            forceFormData: true,
             onSuccess: () => {
                 setEditingId(null);
+                setEditPreviews([]);
+                setExistingImages([]);
                 setEditData({
                     nama: '',
                     deskripsi: '',
                     harga: '',
+                    images: [],
+                    _method: 'PUT',
                 });
             },
         });
@@ -120,13 +197,30 @@ export default function Index({ typeKamars }: Props) {
 
     const columns: ColumnDef<TypeKamar>[] = [
         {
+            accessorKey: 'images',
+            header: 'Foto',
+            cell: ({ row }) => (
+                <div className="flex -space-x-2 overflow-hidden">
+                    {(row.original.images || []).map((img: any, idx: number) => (
+                        <img
+                            key={img.id}
+                            src={`/storage/${img.gambar}`}
+                            alt={`Type ${idx}`}
+                            className="inline-block h-8 w-8 rounded-full ring-2 ring-background object-cover"
+                        />
+                    ))}
+                    {(!row.original.images || row.original.images.length === 0) && <span className="text-muted-foreground text-xs">No images</span>}
+                </div>
+            ),
+        },
+        {
             accessorKey: 'nama',
             header: 'Nama Tipe',
         },
         {
             accessorKey: 'harga',
-            header: 'Harga',
-            cell: ({ row }) => <div>Rp{Number(row.getValue('harga')).toLocaleString('id-ID')}</div>,
+            header: 'Harga (Per Hari)',
+            cell: ({ row }) => <div>Rp{Number(row.getValue('harga')).toLocaleString('id-ID')} / hari</div>,
         },
         {
             accessorKey: 'deskripsi',
@@ -204,13 +298,13 @@ export default function Index({ typeKamars }: Props) {
                                 {errors.nama && <p className="text-sm text-red-600">{errors.nama}</p>}
                             </div>
                             <div>
-                                <Label htmlFor="harga">Harga</Label>
+                                <Label htmlFor="harga">Harga (Per Hari)</Label>
                                 <Input
                                     id="harga"
                                     type="number"
                                     value={data.harga}
                                     onChange={(e) => setData('harga', e.target.value)}
-                                    placeholder="Harga per bulan"
+                                    placeholder="Harga per hari"
                                 />
                                 {errors.harga && <p className="text-sm text-red-600">{errors.harga}</p>}
                             </div>
@@ -223,6 +317,45 @@ export default function Index({ typeKamars }: Props) {
                                     placeholder="Deskripsi fasilitas tipe kamar ini"
                                 />
                                 {errors.deskripsi && <p className="text-sm text-red-600">{errors.deskripsi}</p>}
+                            </div>
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <Label htmlFor="images">Gambar Tipe Kamar</Label>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon"
+                                        className="h-8 w-8 rounded-full"
+                                        onClick={() => createFileInputRef.current?.click()}
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                                <input
+                                    id="images"
+                                    type="file"
+                                    multiple
+                                    className="hidden"
+                                    ref={createFileInputRef}
+                                    onChange={(e) => handleFileChange(e)}
+                                />
+                                {previews.length > 0 && (
+                                    <div className="grid grid-cols-4 gap-2 mt-2">
+                                        {previews.map((preview, index) => (
+                                            <div key={index} className="relative aspect-square rounded-md overflow-hidden border">
+                                                <img src={preview} alt="" className="h-full w-full object-cover" />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeFile(index)}
+                                                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors"
+                                                >
+                                                    <X className="h-3 w-3" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                {errors.images && <p className="text-sm text-red-600">{errors.images}</p>}
                             </div>
                             <div className="flex justify-end gap-2">
                                 <Button type="button" variant="outline" onClick={() => setShowCreateModal(false)}>
@@ -252,7 +385,7 @@ export default function Index({ typeKamars }: Props) {
                                 />
                             </div>
                             <div>
-                                <Label htmlFor="edit-harga">Harga</Label>
+                                <Label htmlFor="edit-harga">Harga (Per Hari)</Label>
                                 <Input
                                     id="edit-harga"
                                     type="number"
@@ -267,6 +400,68 @@ export default function Index({ typeKamars }: Props) {
                                     value={editData.deskripsi}
                                     onChange={(e) => setEditData({ ...editData, deskripsi: e.target.value })}
                                 />
+                            </div>
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <Label htmlFor="edit-images">Tambah Gambar Baru</Label>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon"
+                                        className="h-8 w-8 rounded-full"
+                                        onClick={() => editFileInputRef.current?.click()}
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                                <input
+                                    id="edit-images"
+                                    type="file"
+                                    multiple
+                                    className="hidden"
+                                    ref={editFileInputRef}
+                                    onChange={(e) => handleFileChange(e, true)}
+                                />
+
+                                {existingImages.length > 0 && (
+                                    <div className="mb-4">
+                                        <Label className="text-xs text-muted-foreground mb-2 block">Gambar Saat Ini:</Label>
+                                        <div className="grid grid-cols-4 gap-2">
+                                            {existingImages.map((img) => (
+                                                <div key={img.id} className="relative aspect-square rounded-md overflow-hidden border">
+                                                    <img src={`/storage/${img.gambar}`} alt="" className="h-full w-full object-cover" />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => deleteExistingImage(img.id)}
+                                                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors"
+                                                    >
+                                                        <Trash2 className="h-3 w-3" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {editPreviews.length > 0 && (
+                                    <div>
+                                        <Label className="text-xs text-muted-foreground mb-2 block">Gambar Baru Ditambahkan:</Label>
+                                        <div className="grid grid-cols-4 gap-2">
+                                            {editPreviews.map((preview, index) => (
+                                                <div key={index} className="relative aspect-square rounded-md overflow-hidden border">
+                                                    <img src={preview} alt="" className="h-full w-full object-cover" />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeFile(index, true)}
+                                                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors"
+                                                    >
+                                                        <X className="h-3 w-3" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             <div className="flex justify-end gap-2">
                                 <Button type="button" variant="outline" onClick={handleCancelEdit}>

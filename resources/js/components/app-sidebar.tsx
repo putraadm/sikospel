@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, User, Users, FileText, BedDouble, Home, CreditCard } from 'lucide-react';
+import { BookOpen, Folder, LayoutGrid, User, Users, FileText, BedDouble, Home, CreditCard, MessageSquare } from 'lucide-react';
 
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -46,7 +46,7 @@ const adminNavItems: NavItem[] = [
         icon: Home,
     },
     {
-        title: 'Room',
+        title: 'Kamar',
         href: '/admin/room',
         icon: BedDouble,
     },
@@ -54,11 +54,6 @@ const adminNavItems: NavItem[] = [
         title: 'Tipe Kamar',
         href: '/admin/type-kamar',
         icon: BedDouble,
-    },
-    {
-        title: 'Pendaftar',
-        href: '/admin/pendaftaran-kos',
-        icon: FileText,
     },
     {
         title: 'Penghuni',
@@ -69,6 +64,16 @@ const adminNavItems: NavItem[] = [
         title: 'Tagihan',
         href: '/admin/tagihan',
         icon: CreditCard,
+    },
+    {
+        title: 'Laporan Keuangan',
+        href: '/admin/laporan-keuangan',
+        icon: FileText,
+    },
+    {
+        title: 'Kritik & Saran',
+        href: '/admin/feedback',
+        icon: MessageSquare,
     },
 ];
 
@@ -100,7 +105,7 @@ export function AppSidebar() {
         return adminNavItems.filter(item => {
             if (roleName === 'superadmin') return true;
             if (roleName === 'pemilik') {
-                return ['Dashboard', 'Pendaftar', 'Penghuni', 'Kos', 'Room', 'Tagihan', 'Tipe Kamar'].includes(item.title);
+                return ['Dashboard', 'Penghuni', 'Kos', 'Kamar', 'Tagihan', 'Tipe Kamar', 'Kritik & Saran', 'Laporan Keuangan'].includes(item.title);
             }
             return false;
         });

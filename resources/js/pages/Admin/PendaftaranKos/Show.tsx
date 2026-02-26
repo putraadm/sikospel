@@ -1,4 +1,5 @@
 import { Head, Link, useForm } from '@inertiajs/react';
+import { useState, useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,7 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Copy, FileText, Key } from 'lucide-react';
+import { Copy, FileText, Key, Check, TriangleAlert, Eye } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -38,6 +42,7 @@ interface PendaftaranKos {
     file_path_kk: string | null;
     start_date: string | null;
     notes: string | null;
+    type_kamar?: TypeKamar;
     kos: {
         name: string;
         address: string;
@@ -55,20 +60,37 @@ interface PendaftaranKos {
 interface Props {
     pendaftaranKos: PendaftaranKos;
     availableRooms: Room[];
-    generatedCredentials?: {
-        username: string;
-        email: string;
-        password: string;
-    } | null;
+    flash: {
+        new_user_account?: {
+            username: string;
+            email: string;
+            password: string;
+            name: string;
+        } | null;
+    };
 }
 
-export default function Show({ pendaftaranKos, availableRooms, generatedCredentials }: Props) {
+export default function Show({ pendaftaranKos, availableRooms, flash }: Props) {
     const { data, setData, put, processing, errors } = useForm({
         status: pendaftaranKos.status,
         notes: pendaftaranKos.notes || '',
         assigned_room_id: '',
     });
 
+    const [showAccountModal, setShowAccountModal] = useState(false);
+    const [copied, setCopied] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (flash?.new_user_account) {
+            setShowAccountModal(true);
+        }
+    }, [flash]);
+
+    const copyToClipboard = (text: string, type: string) => {
+        navigator.clipboard.writeText(text);
+        setCopied(type);
+        setTimeout(() => setCopied(null), 2000);
+    };
     const getStatusBadge = (status: string) => {
         const variants: Record<string, string> = {
             menunggu: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
@@ -85,10 +107,6 @@ export default function Show({ pendaftaranKos, availableRooms, generatedCredenti
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         put(`/admin/pendaftaran-kos/${pendaftaranKos.id}`);
-    };
-
-    const copyToClipboard = (text: string) => {
-        navigator.clipboard.writeText(text);
     };
 
     const isAlreadyProcessed = pendaftaranKos.status === 'diterima' || pendaftaranKos.status === 'ditolak';
@@ -110,34 +128,70 @@ export default function Show({ pendaftaranKos, availableRooms, generatedCredenti
                     </Link>
                 </div>
 
-                {/* Credentials yang baru di-generate (ditampilkan setelah approve) */}
-                {generatedCredentials && (
-                    <div className="rounded-xl border-2 border-green-500 bg-green-50 dark:bg-green-900/20 p-4">
-                        <div className="flex items-center gap-2 mb-3">
-                            <Key className="h-5 w-5 text-green-600" />
-                            <h2 className="text-lg font-semibold text-green-800 dark:text-green-200">
-                                Akun Penghuni Berhasil Dibuat
-                            </h2>
+                {/* Account Details Modal (After Success) */}
+                <Dialog open={showAccountModal} onOpenChange={setShowAccountModal}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2 text-green-600">
+                                <Check className="h-5 w-5" />
+                                Akun Berhasil Dibuat
+                            </DialogTitle>
+                            <DialogDescription>
+                                Berikut adalah data akun untuk <strong>{flash?.new_user_account?.name}</strong>.
+                                Mohon berikan data ini kepada penghuni.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="space-y-4 py-4">
+                            <div className="rounded-lg bg-amber-50 p-3 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-900">
+                                <div className="flex gap-2 text-amber-800 dark:text-amber-400">
+                                    <TriangleAlert className="h-5 w-5 shrink-0" />
+                                    <p className="text-xs font-medium">
+                                        Penting: Simpan atau catat data ini sekarang. Password ini hanya muncul satu kali ini saja.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <div className="space-y-1">
+                                    <Label className="text-xs text-muted-foreground">Username</Label>
+                                    <div className="flex gap-2">
+                                        <Input readOnly value={flash?.new_user_account?.username || ''} className="bg-muted font-mono text-sm" />
+                                        <Button variant="outline" size="icon" onClick={() => copyToClipboard(flash?.new_user_account?.username || '', 'user')}>
+                                            {copied === 'user' ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <Label className="text-xs text-muted-foreground">Email</Label>
+                                    <div className="flex gap-2">
+                                        <Input readOnly value={flash?.new_user_account?.email || ''} className="bg-muted font-mono text-sm" />
+                                        <Button variant="outline" size="icon" onClick={() => copyToClipboard(flash?.new_user_account?.email || '', 'email')}>
+                                            {copied === 'email' ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <Label className="text-xs text-muted-foreground font-bold text-[#664229]">PASSWORD</Label>
+                                    <div className="flex gap-2">
+                                        <Input readOnly value={flash?.new_user_account?.password || ''} className="bg-amber-50 dark:bg-amber-950/20 font-mono text-sm font-bold border-amber-200 dark:border-amber-900" />
+                                        <Button variant="outline" size="icon" onClick={() => copyToClipboard(flash?.new_user_account?.password || '', 'pass')} className="border-amber-200 hover:bg-amber-100 dark:border-amber-900">
+                                            {copied === 'pass' ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <p className="text-sm text-green-700 dark:text-green-300 mb-3">
-                            Berikut adalah kredensial login untuk penghuni. Sampaikan informasi ini kepada penghuni.
-                        </p>
-                        <div className="grid gap-2 text-sm">
-                            <div className="flex items-center justify-between rounded-md bg-white dark:bg-gray-800 px-3 py-2">
-                                <div><span className="text-gray-500">Username:</span> <strong>{generatedCredentials.username}</strong></div>
-                                <button onClick={() => copyToClipboard(generatedCredentials.username)} className="text-gray-400 hover:text-gray-600"><Copy className="h-4 w-4" /></button>
-                            </div>
-                            <div className="flex items-center justify-between rounded-md bg-white dark:bg-gray-800 px-3 py-2">
-                                <div><span className="text-gray-500">Email:</span> <strong>{generatedCredentials.email}</strong></div>
-                                <button onClick={() => copyToClipboard(generatedCredentials.email)} className="text-gray-400 hover:text-gray-600"><Copy className="h-4 w-4" /></button>
-                            </div>
-                            <div className="flex items-center justify-between rounded-md bg-white dark:bg-gray-800 px-3 py-2">
-                                <div><span className="text-gray-500">Password:</span> <strong>{generatedCredentials.password}</strong></div>
-                                <button onClick={() => copyToClipboard(generatedCredentials.password)} className="text-gray-400 hover:text-gray-600"><Copy className="h-4 w-4" /></button>
-                            </div>
-                        </div>
-                    </div>
-                )}
+
+                        <DialogFooter>
+                            <Button className="w-full bg-[#664229] hover:bg-[#664229]/90 text-white" onClick={() => setShowAccountModal(false)}>
+                                Saya Sudah Simpan Datanya
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
 
                 <div className="grid gap-4 md:grid-cols-2">
                     {/* Informasi Pendaftaran */}
@@ -189,26 +243,28 @@ export default function Show({ pendaftaranKos, availableRooms, generatedCredenti
 
                     {/* Informasi Kos */}
                     <div className="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
-                        <h2 className="mb-4 text-lg font-semibold">Informasi Kos</h2>
+                        <h2 className="mb-4 text-lg font-semibold">Informasi Kos & Pilihan</h2>
                         <div className="space-y-4">
                             <div>
                                 <Label>Nama Kos</Label>
                                 <p className="mt-1 text-sm">{pendaftaranKos.kos?.name ?? '-'}</p>
                             </div>
-                            <div>
-                                <Label>Alamat Kos</Label>
-                                <p className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">{pendaftaranKos.kos?.address ?? '-'}</p>
+                            <div className="rounded-lg bg-orange-50 p-3 dark:bg-orange-900/10 border border-orange-200 dark:border-orange-800/30">
+                                <Label className="text-orange-800 dark:text-orange-200">Tipe Kamar yang Dipilih Pengguna</Label>
+                                <p className="mt-1 text-lg font-bold text-orange-950 dark:text-orange-100 italic">
+                                    {pendaftaranKos.type_kamar ? pendaftaranKos.type_kamar.nama : 'Tidak memilih'}
+                                </p>
+                                {pendaftaranKos.type_kamar && (
+                                    <p className="text-sm font-medium text-orange-800/60">
+                                        Harga: Rp{Number(pendaftaranKos.type_kamar.harga).toLocaleString()} / hari
+                                    </p>
+                                )}
                             </div>
                             {pendaftaranKos.assigned_room && (
                                 <div>
-                                    <Label>Kamar yang Ditempati</Label>
+                                    <Label>Unit Kamar yang Telah Ditetapkan</Label>
                                     <div className="mt-1">
-                                        <p className="text-sm font-medium">Kamar {pendaftaranKos.assigned_room.room_number}</p>
-                                        <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                            {pendaftaranKos.assigned_room.type_kamar
-                                                ? `${pendaftaranKos.assigned_room.type_kamar.nama} - Rp${Number(pendaftaranKos.assigned_room.type_kamar.harga).toLocaleString()} / bulan`
-                                                : 'Rp - / bulan'}
-                                        </p>
+                                        <Badge className="bg-green-600">No. {pendaftaranKos.assigned_room.room_number}</Badge>
                                     </div>
                                 </div>
                             )}
@@ -338,7 +394,8 @@ export default function Show({ pendaftaranKos, availableRooms, generatedCredenti
                             {/* Pilih Kamar — hanya saat status "Diterima" */}
                             {data.status === 'diterima' && (
                                 <div>
-                                    <Label htmlFor="assigned_room_id">Tentukan Kamar untuk Penghuni *</Label>
+                                    <Label htmlFor="assigned_room_id">Tentukan Unit Kamar untuk Penghuni *</Label>
+                                    <p className="text-xs text-muted-foreground mb-2 italic">Saran: Pilih unit dengan tipe {pendaftaranKos.type_kamar?.nama || 'yang sesuai'}</p>
                                     <Select value={data.assigned_room_id} onValueChange={(val) => setData('assigned_room_id', val)}>
                                         <SelectTrigger className="mt-1">
                                             <SelectValue placeholder="Pilih Kamar" />
