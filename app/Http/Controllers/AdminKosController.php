@@ -5,6 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Kos;
 use App\Models\Pemilik;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class AdminKosController extends Controller
@@ -55,7 +59,6 @@ class AdminKosController extends Controller
 
         $data = $request->except(['image', 'owner_id']);
         
-        // Handle Owner ID
         if ($user->role->name === 'superadmin') {
             $data['owner_id'] = $request->owner_id;
         } else {
@@ -66,7 +69,6 @@ class AdminKosController extends Controller
             $data['owner_id'] = $pemilikData->user_id;
         }
 
-        // Handle Image Upload with Compression
         if ($request->hasFile('image')) {
             $imageStart = $request->file('image');
             $imageName = time() . '.' . $imageStart->getClientOriginalExtension();
@@ -82,13 +84,33 @@ class AdminKosController extends Controller
             
             $encoded = $image->toJpeg(quality: 80); 
             
-            \Illuminate\Support\Facades\Storage::disk('public')->put($path, (string) $encoded);
+            Storage::disk('public')->put($path, (string) $encoded);
             
             $data['image'] = $path;
         }
 
-        $data['slug'] = \Illuminate\Support\Str::slug($data['name']);
-    Kos::create($data);
+        $data['slug'] = Str::slug($data['name']);
+        $kos = Kos::create($data);
+        try {
+            $pemilik = Pemilik::where('user_id', $kos->owner_id)->first();
+            $response = Http::withToken(env('API_PELAPORAN_TOKEN'))
+                ->post(env('API_PELAPORAN_URL') . '/sync-kos', [
+                    'id_kos'     => $kos->id,
+                    'id_pemilik' => $kos->owner_id,
+                    'nama_pemilik' => $pemilik ? $pemilik->name : 'Tidak Diketahui',
+                    'no_wa_pemilik' => $pemilik ? $pemilik->no_wa : null,
+                    'nama_kos'   => $kos->name,
+                    'alamat'     => $kos->address,
+                ]);
+
+            if ($response->successful() && $response->json('success') === true) {
+                Log::info('Berhasil sync kos ke pelaporan: ' . $kos->name);
+            } else {
+                Log::error('Gagal sync kos ke pelaporan: ' . $response->json('message'));
+            }
+        } catch (\Exception $e) {
+            Log::error('Koneksi ke App Pelaporan terputus: ' . $e->getMessage());
+        }
 
         return redirect()->back()->with('success', 'Kos berhasil dibuat.');
     }
@@ -123,7 +145,7 @@ class AdminKosController extends Controller
 
         if ($request->hasFile('image')) {
             if ($kos->image) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($kos->image);
+                Storage::disk('public')->delete($kos->image);
             }
 
             $imageStart = $request->file('image');
@@ -139,12 +161,32 @@ class AdminKosController extends Controller
             $path = 'kos-images/' . $imageName;
             $encoded = $image->toJpeg(quality: 80); 
             
-            \Illuminate\Support\Facades\Storage::disk('public')->put($path, (string) $encoded);
+            Storage::disk('public')->put($path, (string) $encoded);
             
             $data['image'] = $path;
         }
 
         $kos->update($data);
+        try {
+            $pemilik = Pemilik::where('user_id', $kos->owner_id)->first();
+
+            $response = Http::withToken(env('API_PELAPORAN_TOKEN'))
+                ->post(env('API_PELAPORAN_URL') . '/sync-kos', [
+                    'id_kos'        => $kos->id,
+                    'id_pemilik'    => $kos->owner_id,
+                    'nama_pemilik'  => $pemilik ? $pemilik->name : 'Tidak Diketahui',
+                    'no_wa_pemilik' => $pemilik ? $pemilik->no_wa : null,
+                    'nama_kos'      => $kos->name,
+                    'alamat'        => $kos->address,
+                ]);
+
+            if ($response->successful() && $response->json('success') === true) {
+                 Log::info('Berhasil update sync kos: ' . $kos->name);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Koneksi update App Pelaporan terputus: ' . $e->getMessage());
+        }
 
         return redirect()->back()->with('success', 'Kos berhasil diperbarui.');
     }

@@ -29,6 +29,14 @@ class PaymentController extends Controller
 
         $invoice = Invoice::with(['tenancy.penghuni.user'])->findOrFail($request->invoice_id);
 
+        // Validasi Otorisasi: Pastikan invoice milik user yang login (jika dia penghuni)
+        $user = auth()->user();
+        if ($user && $user->role && $user->role->name === 'penghuni') {
+            if ($invoice->tenancy->penghuni->user_id !== $user->id) {
+                return response()->json(['message' => 'Unauthorized access to invoice'], 403);
+            }
+        }
+
         if ($invoice->status === 'lunas') {
             return response()->json(['message' => 'Invoice already paid'], 400);
         }
@@ -164,6 +172,24 @@ class PaymentController extends Controller
     {
         try {
             \Illuminate\Support\Facades\Log::info('Midtrans Notification received', $request->all());
+
+            // Validasi Signature Key dari Midtrans untuk mencegah manipulasi data
+            $orderId = $request->order_id;
+            $statusCode = $request->status_code;
+            $grossAmount = $request->gross_amount;
+            $serverKey = config('midtrans.server_key');
+            $incomingSignature = $request->signature_key;
+
+            $expectedSignature = hash('sha512', $orderId . $statusCode . $grossAmount . $serverKey);
+
+            if ($expectedSignature !== $incomingSignature) {
+                \Illuminate\Support\Facades\Log::warning('Midtrans Invalid Signature Detected', [
+                    'expected' => $expectedSignature,
+                    'received' => $incomingSignature,
+                    'order_id' => $orderId
+                ]);
+                return response()->json(['message' => 'Invalid signature key'], 403);
+            }
 
             $this->updatePaymentStatus($request->all());
             

@@ -11,9 +11,6 @@ export function DropdownMenu({ item, className, isMobile = false, currentUrl }: 
 
     const isActive = currentUrl === item.url || (item.submenu && item.submenu.some((sub) => currentUrl === sub.url));
 
-    // const isActive = (item.url && route().current(item.url)) || (item.submenu && item.submenu.some((sub) => route().current(sub.url)));
-
-
     function handleMouseEnter() {
         setIsOpen(true);
         if (timeoutRef.current) {

@@ -15,22 +15,22 @@ class TypeKamarSeeder extends Seeder
         $types = [
             [
                 'nama' => 'Standard',
-                'harga' => 500000,
+                'harga' => 50000,
                 'deskripsi' => 'Kamar standar dengan fasilitas dasar.',
             ],
             [
                 'nama' => 'Deluxe',
-                'harga' => 800000,
+                'harga' => 80000,
                 'deskripsi' => 'Kamar deluxe dengan AC dan kamar mandi dalam.',
             ],
             [
                 'nama' => 'VIP',
-                'harga' => 1200000,
+                'harga' => 120000,
                 'deskripsi' => 'Kamar VIP dengan fasilitas lengkap dan balkon.',
             ],
             [
                 'nama' => 'Suite',
-                'harga' => 1500000,
+                'harga' => 150000,
                 'deskripsi' => 'Kamar suite dengan ruang tamu kecil dan fasilitas premium.',
             ],
         ];

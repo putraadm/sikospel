@@ -2,19 +2,28 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
+use App\Models\Invoice;
+use App\Models\Kos;
+use App\Models\Payment;
 use App\Models\Penghuni;
+use App\Models\Penyewaan;
+use App\Models\Room;
+use App\Models\TypeKamar;
 use App\Models\User;
+use App\Jobs\SyncMutasiPelaporanJob;
 
 class AdminPenghuniController extends Controller
 {
     public function index()
     {
         $penghuni = Penghuni::with(['user', 'currentRoom.typeKamar', 'currentRoom.kos'])->get();
-        $rooms = \App\Models\Room::with(['typeKamar', 'kos'])->get();
-        $typeKamars = \App\Models\TypeKamar::all();
-        $kos = \App\Models\Kos::all();
+        $rooms = Room::with(['typeKamar', 'kos'])->get();
+        $typeKamars = TypeKamar::all();
+        $kos = Kos::all();
         return Inertia::render('Admin/Penghuni/Index', [
             'penghuni' => $penghuni,
             'rooms' => $rooms,
@@ -25,9 +34,9 @@ class AdminPenghuniController extends Controller
 
     public function create()
     {
-        $rooms = \App\Models\Room::with(['typeKamar', 'kos'])->get();
-        $typeKamars = \App\Models\TypeKamar::all();
-        $kos = \App\Models\Kos::all();
+        $rooms = Room::with(['typeKamar', 'kos'])->get();
+        $typeKamars = TypeKamar::all();
+        $kos = Kos::all();
         return Inertia::render('Admin/Penghuni/Create', [
             'rooms' => $rooms,
             'typeKamars' => $typeKamars,
@@ -38,9 +47,9 @@ class AdminPenghuniController extends Controller
     public function edit($id)
     {
         $penghuni = Penghuni::with(['user', 'currentRoom.typeKamar', 'currentRoom.kos'])->findOrFail($id);
-        $rooms = \App\Models\Room::with(['typeKamar', 'kos'])->get();
-        $typeKamars = \App\Models\TypeKamar::all();
-        $kos = \App\Models\Kos::all();
+        $rooms = Room::with(['typeKamar', 'kos'])->get();
+        $typeKamars = TypeKamar::all();
+        $kos = Kos::all();
         return Inertia::render('Admin/Penghuni/Edit', [
             'penghuni' => $penghuni,
             'rooms' => $rooms,
@@ -66,12 +75,11 @@ class AdminPenghuniController extends Controller
 
         return \DB::transaction(function () use ($request) {
             $password = \Str::random(8);
-            // Create User Account
-            $user = \App\Models\User::create([
+            $user = User::create([
                 'username' => $request->username,
-                'email' => $request->username . '@sikospel.com', // Auto-generated email
+                'email' => $request->username . '@sikospel.com',
                 'password' => bcrypt($password),
-                'role_id' => 4, // Role Penghuni
+                'role_id' => 4,
             ]);
 
             $data = $request->only(['name', 'no_wa', 'address', 'religion', 'tanggal_daftar', 'status_penghuni']);
@@ -85,17 +93,17 @@ class AdminPenghuniController extends Controller
                 $data['file_path_ktp'] = $request->file('file_path_ktp')->store('ktp', 'public');
             }
 
-            $penghuni = \App\Models\Penghuni::create($data);
+            $penghuni = Penghuni::create($data);
 
             if ($request->room_id) {
-                $penyewaan = \App\Models\Penyewaan::create([
+                $penyewaan = Penyewaan::create([
                     'penghuni_id' => $penghuni->user_id,
                     'room_id' => $request->room_id,
                     'start_date' => $request->tanggal_daftar ?? now(),
                     'status' => 'aktif',
                 ]);
 
-                $room = \App\Models\Room::find($request->room_id);
+                $room = Room::find($request->room_id);
                 if ($room) {
                     $room->update(['status' => 'ditempati']);
 
@@ -109,14 +117,13 @@ class AdminPenghuniController extends Controller
 
                     $statusPenghuni = $penghuni->status_penghuni;
                     if ($statusPenghuni === 'penghuni') {
-                        $amount = $dailyRate * 30; // Monthly rate
+                        $amount = $dailyRate * 30;
                     } else {
-                        // Calculate remaining days in the month for pra-penghuni
                         $remainingDays = $start->daysInMonth - $start->day + 1;
                         $amount = $dailyRate * $remainingDays;
                     }
                     
-                    \App\Models\Invoice::create([
+                    Invoice::create([
                         'tenancy_id' => $penyewaan->id,
                         'amount' => $amount,
                         'due_date' => $period->copy()->addDays(9),
@@ -124,6 +131,23 @@ class AdminPenghuniController extends Controller
                         'status' => 'belum_dibayar',
                     ]);
                 }
+
+                $room = Room::find($request->room_id);
+                
+                $urlKtp = $penghuni->file_path_ktp ? asset('storage/' . $penghuni->file_path_ktp) : null;
+                $urlKk = $penghuni->file_path_kk ? asset('storage/' . $penghuni->file_path_kk) : null;
+
+                SyncMutasiPelaporanJob::dispatch(
+                    $penghuni->user_id,
+                    $penghuni->name,
+                    $penghuni->no_wa,
+                    $penghuni->religion,
+                    $urlKtp,
+                    $urlKk,
+                    $room->kos_id,
+                    'masuk',
+                    $request->tanggal_daftar ?? now()->format('Y-m-d')
+                );
             }
 
             return redirect()->route('penghuni.index')->with('success', 'Akun penghuni berhasil dibuat.')
@@ -139,7 +163,6 @@ class AdminPenghuniController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'user_id' => 'required|exists:users,id|unique:penghuni,user_id,' . $id . ',user_id',
             'name' => 'required|string|max:255',
             'no_wa' => 'nullable|string|max:20',
             'address' => 'nullable|string',
@@ -151,75 +174,125 @@ class AdminPenghuniController extends Controller
             'room_id' => 'nullable|exists:rooms,id',
         ]);
 
-        $penghuni = \App\Models\Penghuni::findOrFail($id);
-        $data = $request->only(['user_id', 'name', 'no_wa', 'address', 'religion', 'tanggal_daftar', 'status_penghuni']);
+        return \DB::transaction(function () use ($request, $id) {
+            $penghuni = Penghuni::findOrFail($id);
+            $data = $request->only(['name', 'no_wa', 'address', 'religion', 'tanggal_daftar', 'status_penghuni']);
 
-        if ($request->hasFile('file_path_kk')) {
-            $data['file_path_kk'] = $request->file('file_path_kk')->store('kk', 'public');
-        }
+            if ($request->hasFile('file_path_kk')) {
+                $data['file_path_kk'] = $request->file('file_path_kk')->store('kk', 'public');
+            }
 
-        if ($request->hasFile('file_path_ktp')) {
-            $data['file_path_ktp'] = $request->file('file_path_ktp')->store('ktp', 'public');
-        }
+            if ($request->hasFile('file_path_ktp')) {
+                $data['file_path_ktp'] = $request->file('file_path_ktp')->store('ktp', 'public');
+            }
 
-        $penghuni->update($data);
+            $penghuni->update($data);
 
-        if ($request->room_id) {
-            $currentPenyewaan = $penghuni->currentPenyewaan;
-            
-            if (!$currentPenyewaan || $currentPenyewaan->room_id != $request->room_id) {
-                // Mark old room as available if it exists
-                if ($currentPenyewaan) {
-                    $oldRoom = \App\Models\Room::find($currentPenyewaan->room_id);
-                    if ($oldRoom) {
-                        $oldRoom->update(['status' => 'tersedia']);
+            if ($request->room_id) {
+                $currentPenyewaan = $penghuni->currentPenyewaan;
+                
+                if (!$currentPenyewaan || $currentPenyewaan->room_id != $request->room_id) {
+                    $oldKosId = null;
+
+                    if ($currentPenyewaan) {
+                        $oldRoom = Room::find($currentPenyewaan->room_id);
+                        if ($oldRoom) {
+                            $oldKosId = $oldRoom->kos_id;
+                            $oldRoom->update(['status' => 'tersedia']);
+                        }
+                        $currentPenyewaan->update(['status' => 'selesai', 'end_date' => now()]);
                     }
-                    $currentPenyewaan->update(['status' => 'selesai', 'end_date' => now()]);
-                }
 
-                // Create new tenancy
-                \App\Models\Penyewaan::create([
-                    'penghuni_id' => $penghuni->user_id,
-                    'room_id' => $request->room_id,
-                    'start_date' => $request->tanggal_daftar ?? now(),
-                    'status' => 'aktif',
-                ]);
+                    Penyewaan::create([
+                        'penghuni_id' => $penghuni->user_id,
+                        'room_id' => $request->room_id,
+                        'start_date' => $request->tanggal_daftar ?? now(),
+                        'status' => 'aktif',
+                    ]);
 
-                // Mark new room as occupied
-                $newRoom = \App\Models\Room::find($request->room_id);
-                if ($newRoom) {
-                    $newRoom->update(['status' => 'ditempati']);
+                    $newRoom = Room::find($request->room_id);
+                    $newKosId = null;
+                    if ($newRoom) {
+                        $newKosId = $newRoom->kos_id;
+                        $newRoom->update(['status' => 'ditempati']);
+                    }
+
+                    if ($newKosId && $oldKosId !== $newKosId) {
+                        $urlKtp = $penghuni->file_path_ktp ? asset('storage/' . $penghuni->file_path_ktp) : null;
+                        $urlKk = $penghuni->file_path_kk ? asset('storage/' . $penghuni->file_path_kk) : null;
+
+                        if ($oldKosId) {
+                            SyncMutasiPelaporanJob::dispatch(
+                                $penghuni->user_id,
+                                $penghuni->name,
+                                $penghuni->no_wa,
+                                $penghuni->religion,
+                                null, // KTP gak dikirim kalau keluar
+                                null, // KK gak dikirim kalau keluar
+                                $oldKosId,
+                                'keluar',
+                                now()->format('Y-m-d')
+                            );
+                        }
+
+                        // B. Laporkan MASUK ke Kos Baru
+                        \App\Jobs\SyncMutasiPelaporanJob::dispatch(
+                            $penghuni->user_id,
+                            $penghuni->name,
+                            $penghuni->no_wa,
+                            $penghuni->religion,
+                            $urlKtp,
+                            $urlKk,
+                            $newKosId,
+                            'masuk',
+                            $request->tanggal_daftar ?? now()->format('Y-m-d')
+                        );
+                    }
                 }
             }
-        }
 
-        return redirect()->route('penghuni.index')->with('success', 'Penghuni updated successfully.');
+            return redirect()->route('penghuni.index')->with('success', 'Penghuni updated successfully.');
+        });
     }
 
     public function destroy($id)
     {
         return \DB::transaction(function () use ($id) {
-            $penghuni = \App\Models\Penghuni::findOrFail($id);
+            $penghuni = Penghuni::findOrFail($id);
             $user = $penghuni->user;
             
-            // 1. Release room if currently occupied
             $currentPenyewaan = $penghuni->currentPenyewaan;
+            $idKosKeluar = null;
+
             if ($currentPenyewaan) {
-                $room = \App\Models\Room::find($currentPenyewaan->room_id);
+                $room = Room::find($currentPenyewaan->room_id);
                 if ($room) {
+                    $idKosKeluar = $room->kos_id;
                     $room->update(['status' => 'tersedia']);
                 }
             }
 
-            // 2. Clean up related data that might not have cascade delete
-            $tenancyIds = \App\Models\Penyewaan::where('penghuni_id', $id)->pluck('id');
-            $invoiceIds = \App\Models\Invoice::whereIn('tenancy_id', $tenancyIds)->pluck('id');
-            
-            \App\Models\Payment::whereIn('invoice_id', $invoiceIds)->delete();
-            \App\Models\Invoice::whereIn('tenancy_id', $tenancyIds)->delete();
-            \App\Models\Penyewaan::where('penghuni_id', $id)->delete();
+            if ($idKosKeluar) {
+                SyncMutasiPelaporanJob::dispatch(
+                    $penghuni->user_id,
+                    $penghuni->name,
+                    $penghuni->no_wa,
+                    $penghuni->religion,
+                    null,
+                    null,
+                    $idKosKeluar,
+                    'keluar',
+                    now()->format('Y-m-d')
+                );
+            }
 
-            // 3. Delete the resident record and user account
+            $tenancyIds = Penyewaan::where('penghuni_id', $id)->pluck('id');
+            $invoiceIds = Invoice::whereIn('tenancy_id', $tenancyIds)->pluck('id');
+            
+            Payment::whereIn('invoice_id', $invoiceIds)->delete();
+            Invoice::whereIn('tenancy_id', $tenancyIds)->delete();
+            Penyewaan::where('penghuni_id', $id)->delete();
+
             $penghuni->delete();
             if ($user) {
                 $user->delete();
