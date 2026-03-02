@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Carousel, CarouselContent, CarouselDots, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel';
 import { BreadcrumbItem, Kos, Room, TypeKamar } from '@/types';
 import { Head, Link } from '@inertiajs/react';
-import { MapPin, User, Phone, Home, CheckCircle2, XCircle, Info } from 'lucide-react';
+import { MapPin, User, Phone, Home, CheckCircle2, XCircle, Info, Calendar, MessageCircle } from 'lucide-react';
 
 interface Props {
     kos: Kos;
@@ -44,7 +44,13 @@ export default function Show({ kos, typeKamars }: Props) {
                             {kos.address}
                         </p>
                     </div>
-                    <div className="absolute bottom-6 right-6 md:bottom-10 md:right-10">
+                    <div className="absolute bottom-6 right-6 md:bottom-10 md:right-10 flex gap-2">
+                        <Badge className={`text-sm md:text-base px-4 py-1.5 shadow-lg border-none capitalize ${kos.gender_type === 'putra' ? 'bg-blue-600 text-white' :
+                            kos.gender_type === 'putri' ? 'bg-pink-600 text-white' :
+                                'bg-green-600 text-white'
+                            }`}>
+                            Kos {kos.gender_type === 'campuran' ? 'Campur' : kos.gender_type}
+                        </Badge>
                         <Badge className="bg-primary hover:bg-primary/90 text-sm md:text-base px-4 py-1.5 shadow-lg border-none">
                             Tersedia {availableRooms.length} Kamar
                         </Badge>
@@ -125,8 +131,13 @@ export default function Show({ kos, typeKamars }: Props) {
                                                     </div>
                                                     <div className="flex items-center justify-between border-t pt-3 border-neutral-100 dark:border-neutral-800">
                                                         <span className="text-lg font-bold text-primary">
-                                                            Rp {Number(type.harga || 0).toLocaleString('id-ID')}<span className="text-[10px] text-gray-400 font-normal">/bulan</span>
+                                                            Rp {Number((type.harga || 0) * 30).toLocaleString('id-ID')}<span className="text-[10px] text-gray-400 font-normal">/bulan</span>
                                                         </span>
+                                                        <Link href={`/tipe-kamar/${type.id}?kos=${kos.slug}`}>
+                                                            <Button size="sm" variant="ghost" className="text-xs h-8 px-2 text-primary hover:text-primary hover:bg-primary/10">
+                                                                Lihat Detail
+                                                            </Button>
+                                                        </Link>
                                                     </div>
                                                 </div>
                                             </Card>
@@ -174,17 +185,26 @@ export default function Show({ kos, typeKamars }: Props) {
                             </CardContent>
                         </Card>
 
-                        <Card className="bg-primary text-white border-none shadow-lg">
-                            <CardContent className="px-6">
-                                <h3 className="text-xl font-bold mb-2">Cari Hunian Nyaman?</h3>
-                                <p className="text-primary-foreground/80 text-sm text-justify mb-8">
-                                    Temukan kenyamanan belajar dan beristirahat di sini. Daftarkan diri Anda sekarang untuk mulai menyewa.
+                        <Card className="bg-primary/5 border-primary/20 shadow-none border-2 border-dashed">
+                            <CardContent className="p-6 text-center space-y-4">
+                                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-primary">
+                                    <Calendar className="w-6 h-6" />
+                                </div>
+                                <h3 className="text-lg font-bold">Ingin Menjadi Penghuni?</h3>
+                                <p className="text-sm text-muted-foreground leading-relaxed">
+                                    Untuk mendaftar, silakan buat janji bertemu terlebih dahulu dengan pemilik kos. Pendaftaran penghuni akan dilakukan langsung oleh pemilik setelah kesepakatan.
                                 </p>
-                                <Link href={`/pendaftaran-kos-${kos.slug}`}>
-                                    <Button className="w-full bg-white text-primary hover:bg-neutral-100 font-bold border-none">
-                                        Daftar Sekarang
+                                <a
+                                    href={`https://wa.me/${kos.owner?.no_wa?.replace(/\D/g, '')}?text=Halo%20${kos.owner?.name},%20saya%20tertarik%20dengan%20${kos.name}.%20Bisa%20atur%20jadwal%20bertemu?`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-full block"
+                                >
+                                    <Button className="w-full font-bold gap-2">
+                                        <MessageCircle className="w-4 h-4" />
+                                        Buat Janji Bertemu
                                     </Button>
-                                </Link>
+                                </a>
                             </CardContent>
                         </Card>
                     </div>

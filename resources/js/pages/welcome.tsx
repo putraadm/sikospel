@@ -3,13 +3,16 @@ import MainLayout from '@/components/main-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Search, Home, Shield, Zap, ArrowRight } from 'lucide-react';
+import { MapPin, Search, Home, Shield, Zap, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { type SharedData } from '@/types';
 import { useState, useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 import TextType from '@/components/ui/text-type';
 import ColorBends from '@/components/ui/color-bends';
+
+gsap.registerPlugin(ScrollTrigger);
 
 export default function Welcome({
     kos: initialKos = [],
@@ -20,6 +23,7 @@ export default function Welcome({
 }) {
     const [kos, setKos] = useState(initialKos);
     const heroRef = useRef<HTMLDivElement>(null);
+    const recommendedRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         setKos(initialKos);
@@ -52,34 +56,43 @@ export default function Welcome({
         return () => ctx.revert();
     }, []);
 
+    useEffect(() => {
+        if (!recommendedRef.current || kos.length === 0) return;
+
+        const ctx = gsap.context(() => {
+            gsap.from('.kos-card', {
+                y: 40,
+                duration: 0.8,
+                stagger: 0.1,
+                ease: 'power3.out',
+                scrollTrigger: {
+                    trigger: recommendedRef.current,
+                    start: 'top 85%',
+                },
+            });
+        }, recommendedRef);
+
+        return () => ctx.revert();
+    }, [kos]);
+
     return (
         <MainLayout>
             <Head title="Beranda" />
 
             {/* Hero Section */}
             <section ref={heroRef} className="relative overflow-hidden bg-[#f8f1ea] pt-8 pb-20 lg:pt-12 lg:pb-24 dark:bg-[#0d0907] min-h-[500px]">
-                {/* Dynamic Luxury Background */}
+                {/* Sharp Luxury Background */}
                 <div className="absolute inset-0 pointer-events-none z-0">
-                    <ColorBends
-                        colors={['#1e110a', '#3e2717', '#5a3a22', '#8b5e3c', '#c4a484']}
-                        speed={0.08}
-                        rotation={15}
-                        scale={1.5}
-                        noise={0.15}
-                        transparent={true}
-                    />
-                    <div className="absolute inset-0 bg-white/40 dark:bg-black/70 backdrop-blur-[100px]"></div>
+                    <div className="absolute inset-0 bg-white/40 dark:bg-black/80"></div>
 
                     {/* Architectural Grid Overlay */}
                     <div className="absolute inset-0 bg-[linear-gradient(to_right,#8b5e3c1a_1px,transparent_1px),linear-gradient(to_bottom,#8b5e3c1a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
                 </div>
 
-                {/* Grainy Texture Overlay */}
-                <div className="absolute inset-0 pointer-events-none z-[1] opacity-[0.04] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
                     <div className="flex flex-col items-center text-center">
                         <div className="w-full max-w-4xl">
-                            <div className="hero-badge inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full border border-primary/20 bg-white/50 backdrop-blur-md dark:bg-primary/10 dark:border-primary/30">
+                            <div className="hero-badge inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full border border-primary/20 bg-white dark:bg-primary/20">
                                 <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse"></span>
                                 <span className="text-sm font-semibold text-primary/80 dark:text-primary-foreground/90">
                                     Pilihan Terpercaya di Indonesia
@@ -138,7 +151,6 @@ export default function Welcome({
 
             {/* Features Section */}
             <section className="py-32 bg-[#fffcf8] dark:bg-[#0d0907] relative overflow-hidden">
-                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03]"></div>
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
                     <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
                         {[
@@ -161,7 +173,7 @@ export default function Welcome({
                                 index: '03'
                             }
                         ].map((feature, i) => (
-                            <Card key={i} className="feature-card border-none bg-white/50 backdrop-blur-xl dark:bg-white/5 shadow-2xl hover:shadow-[0_20px_40px_-15px_rgba(139,94,60,0.2)] transition-all duration-700 rounded-[3rem] overflow-hidden group hover:-translate-y-2 ring-1 ring-[#8b5e3c]/10">
+                            <Card key={i} className="feature-card border-none bg-white dark:bg-neutral-900 shadow-2xl hover:shadow-[0_20px_40px_-15px_rgba(139,94,60,0.2)] transition-all duration-700 rounded-[3rem] overflow-hidden group hover:-translate-y-2 ring-1 ring-[#8b5e3c]/10">
                                 <CardContent className="p-10 relative z-10">
                                     <div className="flex justify-between items-start mb-10">
                                         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#f8f1ea] text-[#8b5e3c] group-hover:bg-[#8b5e3c] group-hover:text-white transition-all duration-500 shadow-lg group-hover:rotate-[-6deg]">
@@ -186,70 +198,92 @@ export default function Welcome({
             </section>
 
             {/* Recommended Kos Section */}
-            <section className="py-12 bg-[#f8f1ea] dark:bg-[#050403] relative">
+            <section ref={recommendedRef} className="py-24 bg-[#f8f1ea] dark:bg-[#050403] relative overflow-hidden">
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#8b5e3c0a_1px,transparent_1px),linear-gradient(to_bottom,#8b5e3c0a_1px,transparent_1px)] bg-[size:3rem_3rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
 
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
-                    <div className="mb-10 flex items-start justify-between">
+                    <div className="mb-16 flex flex-col md:flex-row md:items-end justify-between gap-8">
                         <div className="max-w-4xl">
-                            <h2 className="mb-6 text-5xl md:text-6xl font-black text-[#1e110a] dark:text-[#f8f1ea] tracking-tighter leading-[0.9] italic">
-                                Rekomendasi <span className="pr-4 text-transparent bg-clip-text bg-gradient-to-r from-[#8b5e3c] to-[#c4a484]">Kos</span>
-                            </h2>
-                            <p className="text-xl text-[#3e2717]/60 dark:text-white/60 leading-relaxed max-w-lg">Pilihan kos dengan standar kenyamanan tertinggi yang telah kami verifikasi secara langsung.</p>
-                        </div>
-                        <Link href="/pendaftaran-kos" className="hidden sm:inline-flex h-14 items-center gap-3 px-8 rounded-[2rem] bg-[#1e110a] text-[#f8f1ea] font-bold hover:bg-[#8b5e3c] hover:scale-105 transition-all duration-300 shadow-xl group">
-                            <span>Lihat Semua</span>
-                            <div className="size-6 bg-white/20 rounded-full flex items-center justify-center group-hover:translate-x-1 transition-transform">
-                                <ArrowRight className="size-3" />
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="h-px w-12 bg-[#8b5e3c]"></div>
+                                <span className="text-sm font-black uppercase tracking-[0.3em] text-[#8b5e3c]">Exclusive Selection</span>
                             </div>
-                        </Link>
+                            <h2 className="text-6xl md:text-8xl font-black text-[#1e110a] dark:text-[#f8f1ea] tracking-tighter leading-[0.85]">
+                                Tinggal di <br />
+                                <span className="text-primary italic">Hunian Impian</span>
+                            </h2>
+                        </div>
+                        <div className="flex flex-col gap-4">
+                            <p className="text-lg text-[#3e2717]/60 dark:text-white/60 leading-relaxed max-w-xs font-medium">Dekat kampus, aman, dan telah terverifikasi oleh tim kurasi kami.</p>
+                            <Link href="#" className="inline-flex h-14 items-center gap-4 px-8 rounded-2xl bg-[#1e110a] text-[#f8f1ea] font-bold hover:bg-[#8b5e3c] transition-all duration-500 shadow-2xl group w-fit">
+                                <span>Eksplorasi Semua</span>
+                                <ArrowRight className="size-5 group-hover:translate-x-1 transition-transform" />
+                            </Link>
+                        </div>
                     </div>
 
-                    <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
                         {kos.length > 0 ? (
                             kos.map((k: any) => (
-                                <Card key={k.id} className="kos-card group border-none bg-transparent shadow-none hover:-translate-y-3 transition-transform duration-500 cursor-pointer">
-                                    <Link href={`/kos/${k.slug}`} className="block h-full w-full">
-                                        <div className="relative aspect-[3/4] overflow-hidden rounded-[2.5rem] shadow-2xl mb-6">
-                                            <div className="absolute inset-0 bg-[#3e2717]/10 animate-pulse group-hover:opacity-0 transition-opacity"></div>
+                                <Card key={k.id} className="kos-card group border border-neutral-100 dark:border-neutral-800 bg-white dark:bg-[#0d0907] rounded-[2rem] overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 h-full flex flex-col">
+                                    <Link href={`/kos/${k.slug}`} className="flex flex-col h-full w-full">
+                                        {/* Image Section */}
+                                        <div className="relative aspect-[4/3] overflow-hidden rounded-t-[2rem] shrink-0 border-b border-neutral-100 dark:border-neutral-800">
                                             <img
                                                 src={`/storage/${k.image}`}
                                                 alt={k.name}
-                                                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                                onLoad={(e) => (e.currentTarget.previousElementSibling as HTMLElement).style.display = 'none'}
+                                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                             />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-[#1e110a] via-transparent to-transparent opacity-80 group-hover:opacity-90 transition-opacity"></div>
 
-                                            <div className="absolute top-5 right-5 z-20">
-                                                <div className="size-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all duration-500 delay-100">
-                                                    <ArrowRight className="size-4 text-white -rotate-45" />
-                                                </div>
+                                            {/* Badges Overlay */}
+                                            <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+                                                <Badge className={`border-none py-1.5 px-3 text-[10px] font-bold rounded-lg shadow-md ${k.gender_type === 'putra' ? 'bg-blue-600 text-white' :
+                                                        k.gender_type === 'putri' ? 'bg-pink-600 text-white' :
+                                                            'bg-green-600 text-white'
+                                                    }`}>
+                                                    {k.gender_type === 'campuran' ? 'Campur' : k.gender_type.charAt(0).toUpperCase() + k.gender_type.slice(1)}
+                                                </Badge>
+                                                <Badge className="bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white border border-neutral-200 dark:border-neutral-700 py-1.5 px-3 text-[10px] font-bold rounded-lg shadow-md">
+                                                    {k.rooms?.filter((r: any) => r.status === 'tersedia').length || 0} Kamar
+                                                </Badge>
                                             </div>
 
-                                            <div className="absolute bottom-0 left-0 right-0 p-8 text-white z-20">
-                                                <div className="flex items-center gap-2 mb-3">
-                                                    <Badge className="bg-[#8b5e3c] text-white border-none py-1 px-2.5 text-[10px] font-bold tracking-widest uppercase rounded-lg">
-                                                        {k.rooms.filter((r: any) => r.status === 'tersedia').length} Unit
-                                                    </Badge>
-                                                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">Premium</span>
-                                                </div>
-
-                                                <h3 className="text-2xl font-black mb-2 leading-none group-hover:text-[#c4a484] transition-colors">
-                                                    {k.name}
-                                                </h3>
-
-                                                <div className="flex items-center text-xs opacity-70 mb-6 font-medium">
-                                                    <MapPin className="mr-1.5 size-3.5 shrink-0" />
-                                                    {k.address}
-                                                </div>
-
-                                                <div className="pt-6 border-t border-white/10 flex justify-between items-end">
-                                                    <div>
-                                                        <p className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1">Mulai Dari</p>
-                                                        <p className="text-xl font-black">
-                                                            Rp {k.rooms[0]?.type_kamar?.harga?.toLocaleString()}
-                                                        </p>
+                                            {/* Price Tag Overlay */}
+                                            <div className="absolute bottom-4 right-4">
+                                                <div className="bg-primary px-3 py-1.5 rounded-xl shadow-lg text-white border border-white/10">
+                                                    <div className="flex items-baseline gap-1">
+                                                        <span className="text-xs font-bold">Rp</span>
+                                                        <span className="text-base font-black tracking-tight">
+                                                            {Number((k.rooms?.[0]?.type_kamar?.harga || 0) * 30).toLocaleString('id-ID')}
+                                                        </span>
+                                                        <span className="text-[9px] opacity-90 font-medium">/bln</span>
                                                     </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Content Section */}
+                                        <div className="p-5 pt-2 flex flex-col flex-1">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <div className="flex items-center justify-center size-5 bg-green-100 dark:bg-green-900/30 rounded-full">
+                                                    <CheckCircle2 className="size-3 text-green-600 dark:text-green-400" />
+                                                </div>
+                                                <span className="text-[10px] font-bold text-green-600 dark:text-green-400 uppercase tracking-widest">Terverifikasi</span>
+                                            </div>
+
+                                            <h3 className="text-xl font-bold text-[#1e110a] dark:text-[#f8f1ea] leading-tight mb-2 group-hover:text-primary transition-colors line-clamp-1">
+                                                {k.name}
+                                            </h3>
+
+                                            <div className="flex items-start text-sm text-neutral-500 dark:text-neutral-400">
+                                                <MapPin className="mr-1.5 size-4 shrink-0 text-primary/60" />
+                                                <span className="line-clamp-2">{k.address}</span>
+                                            </div>
+
+                                            <div className="mt-auto pt-4 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
+                                                <span className="text-xs font-semibold text-neutral-400 group-hover:text-primary transition-colors">Lihat Detail Unit</span>
+                                                <div className="size-8 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-400 group-hover:bg-primary group-hover:text-white transition-all duration-300">
+                                                    <ArrowRight className="size-4" />
                                                 </div>
                                             </div>
                                         </div>

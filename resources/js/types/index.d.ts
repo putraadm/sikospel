@@ -61,6 +61,7 @@ export interface Kos {
     description: string;
     slug: string;
     image: string;
+    gender_type: 'putra' | 'putri' | 'campuran';
     owner: Pemilik;
     rooms?: Room[];
 }
@@ -70,6 +71,7 @@ export interface TypeKamar {
     nama: string;
     deskripsi: string | null;
     harga: number;
+    facilities?: string[];
     images?: { id: number; gambar: string }[];
 }
 

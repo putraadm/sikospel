@@ -11,41 +11,82 @@ class AdminPenghuniController extends Controller
 {
     public function index()
     {
-        $penghuni = Penghuni::with(['user', 'currentRoom.typeKamar', 'currentRoom.kos'])->get();
-        $rooms = \App\Models\Room::with(['typeKamar', 'kos'])->get();
-        $typeKamars = \App\Models\TypeKamar::all();
-        $kos = \App\Models\Kos::all();
+        $user = auth()->user();
+        $queryPenghuni = Penghuni::with(['user', 'currentRoom.typeKamar', 'currentRoom.kos']);
+        $queryRooms = \App\Models\Room::with(['typeKamar', 'kos']);
+        $queryTypeKamars = \App\Models\TypeKamar::query();
+        $queryKos = \App\Models\Kos::query();
+
+        if ($user->role->name === 'pemilik') {
+            $pemilik = \App\Models\Pemilik::where('user_id', $user->id)->first();
+            $kosIds = \App\Models\Kos::where('owner_id', $pemilik->user_id)->pluck('id');
+            
+            $queryPenghuni->whereHas('currentRoom', function($q) use ($kosIds) {
+                $q->whereIn('kos_id', $kosIds);
+            });
+            $queryRooms->whereIn('kos_id', $kosIds);
+            $queryKos->where('owner_id', $pemilik->user_id);
+            // Optionally filter type kamars if needed, though they might be shared. 
+            // For now let's keep all type kamars or filter if you have a relation.
+        }
+
         return Inertia::render('Admin/Penghuni/Index', [
-            'penghuni' => $penghuni,
-            'rooms' => $rooms,
-            'typeKamars' => $typeKamars,
-            'kos' => $kos,
+            'penghuni' => $queryPenghuni->get(),
+            'rooms' => $queryRooms->get(),
+            'typeKamars' => $queryTypeKamars->get(),
+            'kos' => $queryKos->get(),
         ]);
     }
 
     public function create()
     {
-        $rooms = \App\Models\Room::with(['typeKamar', 'kos'])->get();
-        $typeKamars = \App\Models\TypeKamar::all();
-        $kos = \App\Models\Kos::all();
+        $user = auth()->user();
+        $queryRooms = \App\Models\Room::with(['typeKamar', 'kos']);
+        $queryTypeKamars = \App\Models\TypeKamar::query();
+        $queryKos = \App\Models\Kos::query();
+
+        if ($user->role->name === 'pemilik') {
+            $pemilik = \App\Models\Pemilik::where('user_id', $user->id)->first();
+            $kosIds = \App\Models\Kos::where('owner_id', $pemilik->user_id)->pluck('id');
+            
+            $queryRooms->whereIn('kos_id', $kosIds);
+            $queryKos->where('owner_id', $pemilik->user_id);
+        }
+
         return Inertia::render('Admin/Penghuni/Create', [
-            'rooms' => $rooms,
-            'typeKamars' => $typeKamars,
-            'kos' => $kos,
+            'rooms' => $queryRooms->get(),
+            'typeKamars' => $queryTypeKamars->get(),
+            'kos' => $queryKos->get(),
         ]);
     }
 
     public function edit($id)
     {
+        $user = auth()->user();
         $penghuni = Penghuni::with(['user', 'currentRoom.typeKamar', 'currentRoom.kos'])->findOrFail($id);
-        $rooms = \App\Models\Room::with(['typeKamar', 'kos'])->get();
-        $typeKamars = \App\Models\TypeKamar::all();
-        $kos = \App\Models\Kos::all();
+        
+        $queryRooms = \App\Models\Room::with(['typeKamar', 'kos']);
+        $queryTypeKamars = \App\Models\TypeKamar::query();
+        $queryKos = \App\Models\Kos::query();
+
+        if ($user->role->name === 'pemilik') {
+            $pemilik = \App\Models\Pemilik::where('user_id', $user->id)->first();
+            $kosIds = \App\Models\Kos::where('owner_id', $pemilik->user_id)->pluck('id');
+            
+            // Security check
+            if ($penghuni->currentRoom && !in_array($penghuni->currentRoom->kos_id, $kosIds->toArray())) {
+                abort(403, 'Unauthorized access to this resident.');
+            }
+
+            $queryRooms->whereIn('kos_id', $kosIds);
+            $queryKos->where('owner_id', $pemilik->user_id);
+        }
+
         return Inertia::render('Admin/Penghuni/Edit', [
             'penghuni' => $penghuni,
-            'rooms' => $rooms,
-            'typeKamars' => $typeKamars,
-            'kos' => $kos,
+            'rooms' => $queryRooms->get(),
+            'typeKamars' => $queryTypeKamars->get(),
+            'kos' => $queryKos->get(),
         ]);
     }
 

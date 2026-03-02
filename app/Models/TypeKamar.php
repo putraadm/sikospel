@@ -12,6 +12,11 @@ class TypeKamar extends Model
         'nama',
         'deskripsi',
         'harga',
+        'facilities',
+    ];
+
+    protected $casts = [
+        'facilities' => 'array',
     ];
 
     public function rooms()

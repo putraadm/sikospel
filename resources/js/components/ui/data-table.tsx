@@ -29,11 +29,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  emptyMessage?: string;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
+  emptyMessage = 'Data tidak ditemukan.',
   leftHeaderAction,
   headerAction,
   getRowClassName,
@@ -112,7 +114,7 @@ export function DataTable<TData, TValue>({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  Data tidak ditemukan.
+                  {emptyMessage}
                 </TableCell>
               </TableRow>
             )}

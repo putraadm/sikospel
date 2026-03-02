@@ -5,13 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { FileDown, FileSpreadsheet, Search, Filter, ArrowUpDown, TrendingUp, Calendar, Home, CreditCard } from 'lucide-react';
+import { FileDown, FileSpreadsheet, Search, ArrowUpDown, TrendingUp, Calendar, CreditCard } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { type SharedData } from '@/types';
 import { useState, useEffect } from 'react';
-import { Pagination } from '@/components/ui/pagination';
-
-// No longer using date-fns to avoid dependency issues in this environment
 
 interface Payment {
     id: number;
@@ -83,18 +80,13 @@ const YEARS = Array.from({ length: 5 }, (_, i) => (new Date().getFullYear() - i)
 
 export default function Index({ payments, stats, filters, kosList, methods }: Props) {
     const { auth } = usePage<SharedData>().props;
+    // Initialize search from filters, handle undefined and 'all' values
     const [search, setSearch] = useState(filters.search || '');
-
-    // Real-time search with debounce
+    
+    // Sync search state when filters.search changes from backend
     useEffect(() => {
-        const timer = setTimeout(() => {
-            if (search !== (filters.search || '')) {
-                handleFilterChange('search', search);
-            }
-        }, 500);
-
-        return () => clearTimeout(timer);
-    }, [search]);
+        setSearch(filters.search || '');
+    }, [filters.search]);
 
     const formatCurrency = (amount: number | string) => {
         return new Intl.NumberFormat('id-ID', {
@@ -104,18 +96,21 @@ export default function Index({ payments, stats, filters, kosList, methods }: Pr
         }).format(Number(amount));
     };
 
-    const handleFilterChange = (key: string, value: any) => {
-        const newProps = { ...filters, [key]: value };
-
-        if (value === 'all' || value === '') {
-            delete newProps[key as keyof typeof filters];
+    const handleFilterChange = (key: string, value: string) => {
+        // Create new filters object
+        const newFilters: Record<string, any> = { ...filters };
+        
+        // Handle 'all' value - remove the key from filters
+        if (value === 'all' || value === '' || value === undefined) {
+            delete newFilters[key];
+        } else {
+            newFilters[key] = value;
         }
 
         // Always reset to page 1 when filters change
-        const params = { ...newProps };
-        delete (params as any).page;
+        delete newFilters.page;
 
-        router.get(route('admin.laporan-keuangan.index'), params, {
+        router.get(route('admin.laporan-keuangan.index'), newFilters, {
             replace: true,
             preserveScroll: true,
             preserveState: true,
@@ -135,8 +130,12 @@ export default function Index({ payments, stats, filters, kosList, methods }: Pr
 
     const handleSort = (column: string) => {
         const direction = filters.sort === column && filters.direction === 'asc' ? 'desc' : 'asc';
-        router.get(route('admin.laporan-keuangan.index'), { ...filters, sort: column, direction }, {
+        const newFilters = { ...filters, sort: column, direction };
+        delete newFilters.page;
+        
+        router.get(route('admin.laporan-keuangan.index'), newFilters, {
             preserveState: true,
+            preserveScroll: true,
         });
     };
 
@@ -294,31 +293,39 @@ export default function Index({ payments, stats, filters, kosList, methods }: Pr
                     <Table>
                         <TableHeader className="bg-[#664229]/5">
                             <TableRow className="hover:bg-transparent border-[#664229]/10">
+                                <TableHead className="text-[#664229] font-bold cursor-pointer" onClick={() => handleSort('penghuni_name')}>
+                                    Nama Penghuni <ArrowUpDown className="inline h-3 w-3 ml-1" />
+                                </TableHead>
+                                <TableHead className="text-[#664229] font-bold cursor-pointer" onClick={() => handleSort('kos_name')}>
+                                    Nama Kos <ArrowUpDown className="inline h-3 w-3 ml-1" />
+                                </TableHead>
                                 <TableHead className="text-[#664229] font-bold cursor-pointer" onClick={() => handleSort('payment_date')}>
                                     Tanggal Bayar <ArrowUpDown className="inline h-3 w-3 ml-1" />
                                 </TableHead>
-                                <TableHead className="text-[#664229] font-bold">Nama Penghuni</TableHead>
-                                <TableHead className="text-[#664229] font-bold">Nama Kos</TableHead>
                                 <TableHead className="text-[#664229] font-bold">Type Kamar</TableHead>
-                                <TableHead className="text-[#664229] font-bold">Periode Tagihan</TableHead>
+                                <TableHead className="text-[#664229] font-bold cursor-pointer" onClick={() => handleSort('billing_period')}>
+                                    Periode Tagihan <ArrowUpDown className="inline h-3 w-3 ml-1" />
+                                </TableHead>
                                 <TableHead className="text-[#664229] font-bold cursor-pointer" onClick={() => handleSort('amount_paid')}>
                                     Nominal Bayar <ArrowUpDown className="inline h-3 w-3 ml-1" />
                                 </TableHead>
-                                <TableHead className="text-[#664229] font-bold">Metode Pembayaran</TableHead>
+                                <TableHead className="text-[#664229] font-bold cursor-pointer" onClick={() => handleSort('method')}>
+                                    Metode <ArrowUpDown className="inline h-3 w-3 ml-1" />
+                                </TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {payments.data.length > 0 ? (
                                 payments.data.map((payment) => (
                                     <TableRow key={payment.id} className="border-[#664229]/5 hover:bg-[#664229]/5 transition-colors">
-                                        <TableCell className="font-medium text-xs">
-                                            {new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(payment.payment_date))}
-                                        </TableCell>
                                         <TableCell>
                                             <div className="font-semibold text-slate-900">{payment.invoice?.tenancy?.penghuni?.name || 'N/A'}</div>
                                         </TableCell>
                                         <TableCell className="text-sm">
                                             {payment.invoice?.tenancy?.room?.kos?.name || 'N/A'}
+                                        </TableCell>
+                                        <TableCell className="font-medium text-xs whitespace-nowrap">
+                                            {new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(payment.payment_date))}
                                         </TableCell>
                                         <TableCell>
                                             <div className="text-xs">
@@ -341,7 +348,7 @@ export default function Index({ payments, stats, filters, kosList, methods }: Pr
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                                    <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
                                         Tidak ada data pemasukan ditemukan.
                                     </TableCell>
                                 </TableRow>

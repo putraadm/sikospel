@@ -66,8 +66,7 @@ export default function MainLayout({ children, breadcrumbs = [] }: Props) {
                                     <DropdownMenuTrigger asChild>
                                         <Button variant="ghost" className="h-12 px-3 rounded-2xl bg-white border border-primary/10 shadow-sm hover:bg-primary/5 hover:border-primary/20 transition-all flex items-center gap-3 group dark:bg-neutral-900 dark:border-primary/20">
                                             <div className="flex flex-col items-end hidden sm:flex">
-                                                <span className="text-xs font-black text-neutral-900 leading-none dark:text-white tracking-tight">{auth.user.username}</span>
-                                                <span className="text-[10px] text-primary font-bold uppercase tracking-wider mt-0.5 opacity-80">Penghuni</span>
+                                                <span className="text-xs font-black text-neutral-900 leading-none dark:text-white tracking-tight capitalize">{auth.user.role?.name}</span>
                                             </div>
                                             <Avatar className="size-9 overflow-hidden rounded-xl border-2 border-primary/10 group-hover:border-primary/30 transition-all shadow-sm">
                                                 <AvatarImage src={auth.user.avatar} alt={auth.user.username} />

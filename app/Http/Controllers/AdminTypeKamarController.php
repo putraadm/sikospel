@@ -26,6 +26,7 @@ class AdminTypeKamarController extends Controller
             'nama' => 'required|string|max:100',
             'deskripsi' => 'nullable|string',
             'harga' => 'required|numeric',
+            'facilities' => 'nullable|array',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
@@ -61,6 +62,7 @@ class AdminTypeKamarController extends Controller
             'nama' => 'required|string|max:100',
             'deskripsi' => 'nullable|string',
             'harga' => 'required|numeric',
+            'facilities' => 'nullable|array',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 

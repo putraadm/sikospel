@@ -57,6 +57,7 @@ Route::get('pendaftaran-kos-{slug?}', [PublicPendaftaranKosController::class, 'c
 Route::post('pendaftaran-kos', [PublicPendaftaranKosController::class, 'store'])->name('public.pendaftaran-kos.store');
 Route::get('pendaftaran-kos/sukses/{id}', [PublicPendaftaranKosController::class, 'success'])->name('public.pendaftaran-kos.sukses');
 Route::get('kos/{slug}', [PublicKosController::class, 'show'])->name('public.kos.show');
+Route::get('tipe-kamar/{id}', [App\Http\Controllers\PublicTypeKamarController::class, 'show'])->name('public.type-kamar.show');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('payment/token', [App\Http\Controllers\PaymentController::class, 'getSnapToken'])->name('payment.token');
@@ -165,6 +166,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 return redirect()->route('admin.tagihan.index')->with('success', 'Pengaturan tagihan berhasil disimpan.');
             })->name('admin.tagihan.index');
             Route::get('feedback', [AdminFeedbackController::class, 'index'])->name('admin.feedback.index');
+            Route::post('tagihan/{id}/mark-paid', [App\Http\Controllers\AdminInvoiceController::class, 'markAsPaid'])->name('admin.tagihan.mark-paid');
         });
     });
 });

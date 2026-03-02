@@ -76,6 +76,8 @@ interface Props {
 
 export default function Tagihan({ invoices = [] }: Props) {
     const [selectedProof, setSelectedProof] = useState<string | null>(null);
+    const [confirmPaidId, setConfirmPaidId] = useState<number | null>(null);
+    const [isMarkingPaid, setIsMarkingPaid] = useState(false);
 
     const getInvoiceStatusBadge = (status: string) => {
         const variants: Record<string, string> = {
@@ -89,6 +91,21 @@ export default function Tagihan({ invoices = [] }: Props) {
             terlambat: 'Terlambat',
         };
         return <Badge variant="outline" className={variants[status] || ''}>{labels[status] || status}</Badge>;
+    };
+
+    const handleMarkAsPaid = () => {
+        if (!confirmPaidId) return;
+        setIsMarkingPaid(true);
+        router.post(`/admin/tagihan/${confirmPaidId}/mark-paid`, {}, {
+            onSuccess: () => {
+                setConfirmPaidId(null);
+                setIsMarkingPaid(false);
+            },
+            onError: () => {
+                setIsMarkingPaid(false);
+            },
+            preserveScroll: true
+        });
     };
 
     const columnsPembayaran: ColumnDef<Invoice>[] = [
@@ -192,9 +209,12 @@ export default function Tagihan({ invoices = [] }: Props) {
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Catat Pembayaran
+                        <DropdownMenuItem
+                            disabled={row.original.status === 'lunas'}
+                            onClick={() => setConfirmPaidId(row.original.id)}
+                        >
+                            <CheckCircle2 className="mr-2 h-4 w-4 text-green-600" />
+                            Tandai Lunas (Cash)
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
@@ -268,6 +288,29 @@ export default function Tagihan({ invoices = [] }: Props) {
                                     </Button>
                                 )}
                             </div>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Confirm Mark as Paid Dialog */}
+                <Dialog open={confirmPaidId !== null} onOpenChange={(open) => !open && setConfirmPaidId(null)}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Konfirmasi Pembayaran Cash</DialogTitle>
+                            <DialogDescription>
+                                Apakah Anda yakin ingin menandai tagihan ini sebagai <strong>Lunas</strong> melalui pembayaran tunai?
+                                Tindakan ini akan mencatat pembayaran secara manual dalam sistem.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setConfirmPaidId(null)}>Batal</Button>
+                            <Button
+                                className="bg-green-600 hover:bg-green-700 text-white"
+                                onClick={handleMarkAsPaid}
+                                disabled={isMarkingPaid}
+                            >
+                                {isMarkingPaid ? 'Memproses...' : 'Ya, Tandai Lunas'}
+                            </Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>

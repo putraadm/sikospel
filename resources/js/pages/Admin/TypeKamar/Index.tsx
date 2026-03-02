@@ -1,5 +1,5 @@
 import { Head, useForm, router } from '@inertiajs/react';
-import { Plus, Trash2, Edit, MoreHorizontal, Image as ImageIcon, X } from 'lucide-react';
+import { Plus, Trash2, Edit, MoreHorizontal, Image as ImageIcon, X, Eye } from 'lucide-react';
 import { useState, useRef } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
 
@@ -10,6 +10,7 @@ import { ConfirmDialog } from '@/components/app/confirm-dialog';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/ui/data-table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -30,8 +31,24 @@ interface TypeKamar {
     nama: string;
     deskripsi: string;
     harga: number;
+    facilities?: string[];
     images?: { id: number; gambar: string }[];
 }
+
+const commonFacilities = [
+    'AC',
+    'Kipas Angin',
+    'Kamar Mandi Dalam',
+    'Kamar Mandi Luar',
+    'Kasur Besar',
+    'Kasur Kecil',
+    'Lemari Pakaian',
+    'Meja & Kursi',
+    'WiFi',
+    'Laundry',
+    'Dapur Bersama',
+    'CCTV'
+];
 
 interface Props {
     typeKamars: TypeKamar[];
@@ -42,6 +59,7 @@ export default function Index({ typeKamars }: Props) {
         nama: '',
         deskripsi: '',
         harga: '',
+        facilities: [] as string[],
         images: [] as File[],
     });
 
@@ -54,6 +72,7 @@ export default function Index({ typeKamars }: Props) {
         nama: '',
         deskripsi: '',
         harga: '',
+        facilities: [] as string[],
         images: [] as File[],
         _method: 'PUT',
     });
@@ -136,6 +155,7 @@ export default function Index({ typeKamars }: Props) {
             nama: item.nama,
             deskripsi: item.deskripsi || '',
             harga: item.harga.toString(),
+            facilities: item.facilities || [],
             images: [],
             _method: 'PUT',
         });
@@ -149,6 +169,7 @@ export default function Index({ typeKamars }: Props) {
             nama: '',
             deskripsi: '',
             harga: '',
+            facilities: [],
             images: [],
             _method: 'PUT',
         });
@@ -167,6 +188,7 @@ export default function Index({ typeKamars }: Props) {
                     nama: '',
                     deskripsi: '',
                     harga: '',
+                    facilities: [],
                     images: [],
                     _method: 'PUT',
                 });
@@ -228,6 +250,23 @@ export default function Index({ typeKamars }: Props) {
             cell: ({ row }) => <div className="max-w-[300px] truncate">{row.getValue('deskripsi')}</div>,
         },
         {
+            accessorKey: 'facilities',
+            header: 'Fasilitas',
+            cell: ({ row }) => {
+                const facs = row.original.facilities || [];
+                return (
+                    <div className="flex flex-wrap gap-1 max-w-[200px]">
+                        {facs.map((f) => (
+                            <Badge key={f} variant="secondary" className="text-[10px] px-1 py-0 h-4">
+                                {f}
+                            </Badge>
+                        ))}
+                        {facs.length === 0 && <span className="text-muted-foreground text-[10px]">No facilities</span>}
+                    </div>
+                );
+            },
+        },
+        {
             id: 'actions',
             header: 'Aksi',
             cell: ({ row }) => {
@@ -241,6 +280,10 @@ export default function Index({ typeKamars }: Props) {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => window.open(`/tipe-kamar/${item.id}`, '_blank')}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                Lihat Detail (Pratinjau)
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleEdit(item)}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit
@@ -317,6 +360,30 @@ export default function Index({ typeKamars }: Props) {
                                     placeholder="Deskripsi fasilitas tipe kamar ini"
                                 />
                                 {errors.deskripsi && <p className="text-sm text-red-600">{errors.deskripsi}</p>}
+                            </div>
+                            <div>
+                                <Label className="mb-2 block">Fasilitas Kamar</Label>
+                                <div className="grid grid-cols-2 gap-2 p-3 rounded-lg border bg-muted/20">
+                                    {commonFacilities.map((facility) => (
+                                        <div key={facility} className="flex items-center space-x-2">
+                                            <input
+                                                type="checkbox"
+                                                id={`fac-${facility}`}
+                                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                                checked={data.facilities.includes(facility)}
+                                                onChange={(e) => {
+                                                    const current = [...data.facilities];
+                                                    if (e.target.checked) {
+                                                        setData('facilities', [...current, facility]);
+                                                    } else {
+                                                        setData('facilities', current.filter(f => f !== facility));
+                                                    }
+                                                }}
+                                            />
+                                            <Label htmlFor={`fac-${facility}`} className="text-xs cursor-pointer">{facility}</Label>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                             <div>
                                 <div className="flex items-center justify-between mb-2">
@@ -400,6 +467,29 @@ export default function Index({ typeKamars }: Props) {
                                     value={editData.deskripsi}
                                     onChange={(e) => setEditData({ ...editData, deskripsi: e.target.value })}
                                 />
+                            </div>
+                            <div>
+                                <Label className="mb-2 block">Fasilitas Kamar</Label>
+                                <div className="grid grid-cols-2 gap-2 p-3 rounded-lg border bg-muted/20">
+                                    {commonFacilities.map((facility) => (
+                                        <div key={facility} className="flex items-center space-x-2">
+                                            <input
+                                                type="checkbox"
+                                                id={`edit-fac-${facility}`}
+                                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                                checked={editData.facilities.includes(facility)}
+                                                onChange={(e) => {
+                                                    const current = [...editData.facilities];
+                                                    const updated = e.target.checked
+                                                        ? [...current, facility]
+                                                        : current.filter(f => f !== facility);
+                                                    setEditData({ ...editData, facilities: updated });
+                                                }}
+                                            />
+                                            <Label htmlFor={`edit-fac-${facility}`} className="text-xs cursor-pointer">{facility}</Label>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                             <div>
                                 <div className="flex items-center justify-between mb-2">
