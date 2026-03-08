@@ -18,7 +18,7 @@ use App\Jobs\SyncMutasiPelaporanJob;
 
 class AdminPenghuniController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
         $queryPenghuni = Penghuni::with(['user', 'currentRoom.typeKamar', 'currentRoom.kos']);
@@ -35,19 +35,28 @@ class AdminPenghuniController extends Controller
             });
             $queryRooms->whereIn('kos_id', $kosIds);
             $queryKos->where('owner_id', $pemilik->user_id);
-            // Optionally filter type kamars if needed, though they might be shared. 
-            // For now let's keep all type kamars or filter if you have a relation.
+            $queryTypeKamars->where('user_id', $user->id);
         }
 
-        $penghuni = Penghuni::with(['user', 'currentRoom.typeKamar', 'currentRoom.kos'])->get();
-        $rooms = Room::with(['typeKamar', 'kos'])->get();
-        $typeKamars = TypeKamar::all();
-        $kos = Kos::all();
+        // Filtering
+        if ($request->kos_id) {
+            $queryPenghuni->whereHas('currentRoom', function($q) use ($request) {
+                $q->where('kos_id', $request->kos_id);
+            });
+        }
+
+        if ($request->status) {
+            $queryPenghuni->where('status_penghuni', $request->status);
+        }
+
+        $queryPenghuni->orderBy('created_at', 'desc');
+
         return Inertia::render('Admin/Penghuni/Index', [
             'penghuni' => $queryPenghuni->get(),
             'rooms' => $queryRooms->get(),
             'typeKamars' => $queryTypeKamars->get(),
             'kos' => $queryKos->get(),
+            'filters' => $request->only(['kos_id', 'status']),
         ]);
     }
 
@@ -64,6 +73,7 @@ class AdminPenghuniController extends Controller
             
             $queryRooms->whereIn('kos_id', $kosIds);
             $queryKos->where('owner_id', $pemilik->user_id);
+            $queryTypeKamars->where('user_id', $user->id);
         }
 
         return Inertia::render('Admin/Penghuni/Create', [
@@ -93,6 +103,7 @@ class AdminPenghuniController extends Controller
 
             $queryRooms->whereIn('kos_id', $kosIds);
             $queryKos->where('owner_id', $pemilik->user_id);
+            $queryTypeKamars->where('user_id', $user->id);
         }
 
         return Inertia::render('Admin/Penghuni/Edit', [
@@ -152,29 +163,8 @@ class AdminPenghuniController extends Controller
                 if ($room) {
                     $room->update(['status' => 'ditempati']);
 
-                    // Create initial invoice
-                    $room->load('typeKamar');
-                    $dailyRate = $room->typeKamar ? $room->typeKamar->harga : 0;
-                    
-                    $startDate = $request->tanggal_daftar ?? now();
-                    $start = \Carbon\Carbon::parse($startDate);
-                    $period = $start->copy()->startOfMonth();
-
-                    $statusPenghuni = $penghuni->status_penghuni;
-                    if ($statusPenghuni === 'penghuni') {
-                        $amount = $dailyRate * 30;
-                    } else {
-                        $remainingDays = $start->daysInMonth - $start->day + 1;
-                        $amount = $dailyRate * $remainingDays;
-                    }
-                    
-                    Invoice::create([
-                        'tenancy_id' => $penyewaan->id,
-                        'amount' => $amount,
-                        'due_date' => $period->copy()->addDays(9),
-                        'billing_period' => $period,
-                        'status' => 'belum_dibayar',
-                    ]);
+                    // Initial invoice creation removed per user request.
+                    // Billing will be managed manually via the "Generate Tagihan" button.
                 }
 
                 $room = Room::find($request->room_id);

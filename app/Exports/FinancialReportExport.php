@@ -39,11 +39,11 @@ class FinancialReportExport implements FromCollection, WithHeadings, WithMapping
     {
         return [
             \Carbon\Carbon::parse($payment->payment_date)->format('d/m/Y H:i'),
-            $payment->invoice->tenancy->penghuni->name ?? 'N/A',
-            $payment->invoice->tenancy->room->kos->name,
-            'Kamar ' . $payment->invoice->tenancy->room->room_number,
-            $payment->invoice->tenancy->room->typeKamar->nama ?? 'Unknown',
-            $payment->invoice->billing_period ? \Carbon\Carbon::parse($payment->invoice->billing_period)->format('F Y') : '-',
+            $payment->penghuni_name ?? 'N/A',
+            $payment->kos_name,
+            'Kamar ' . $payment->room_number,
+            $payment->type_kamar_nama ?? '-',
+            $payment->billing_period ? \Carbon\Carbon::parse($payment->billing_period)->format('F Y') : '-',
             $payment->amount_paid,
             $payment->method ?? 'Default',
         ];

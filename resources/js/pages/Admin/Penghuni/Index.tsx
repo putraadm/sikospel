@@ -88,6 +88,10 @@ interface Props {
     rooms: Room[];
     typeKamars: TypeKamar[];
     kos: Kos[];
+    filters: {
+        kos_id?: string;
+        status?: string;
+    };
     flash: {
         new_user_account?: {
             username: string;
@@ -107,7 +111,7 @@ const religions = [
     'Khonghucu'
 ];
 
-export default function Index({ penghuni, flash }: Props) {
+export default function Index({ penghuni, kos, filters, flash }: Props) {
     const [selectedPenghuni, setSelectedPenghuni] = useState<Penghuni | null>(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [showAccountModal, setShowAccountModal] = useState(false);
@@ -253,8 +257,41 @@ export default function Index({ penghuni, flash }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Penghuni" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <h1 className="text-2xl font-bold">Kelola Penghuni</h1>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="w-48">
+                            <Select
+                                value={filters.kos_id || 'all'}
+                                onValueChange={(v) => router.get('/admin/penghuni', { ...filters, kos_id: v === 'all' ? '' : v }, { preserveState: true })}
+                            >
+                                <SelectTrigger className="bg-white dark:bg-[#161615]">
+                                    <SelectValue placeholder="Semua Kos" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Semua Kos</SelectItem>
+                                    {kos.map((k) => (
+                                        <SelectItem key={k.id} value={k.id.toString()}>{k.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="w-40">
+                            <Select
+                                value={filters.status || 'all'}
+                                onValueChange={(v) => router.get('/admin/penghuni', { ...filters, status: v === 'all' ? '' : v }, { preserveState: true })}
+                            >
+                                <SelectTrigger className="bg-white dark:bg-[#161615]">
+                                    <SelectValue placeholder="Semua Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Semua Status</SelectItem>
+                                    <SelectItem value="penghuni">Penghuni</SelectItem>
+                                    <SelectItem value="pra penghuni">Pra Penghuni</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border bg-white dark:bg-[#161615]">

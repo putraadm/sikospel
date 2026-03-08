@@ -100,6 +100,35 @@ export default function Show({ typeKamar, kos }: Props) {
                                 ))}
                             </div>
                         )}
+
+                        <div className="pt-8">
+                            <div className="p-6 rounded-2xl bg-[#664229]/5 border border-[#664229]/20 text-center space-y-4">
+                                <div className="w-12 h-12 bg-[#664229]/10 rounded-full flex items-center justify-center mx-auto text-[#664229]">
+                                    <Calendar className="w-6 h-6" />
+                                </div>
+                                <h3 className="text-lg font-bold">Ingin Menyewa Kamar Ini?</h3>
+                                <p className="text-sm text-muted-foreground leading-relaxed">
+                                    Untuk mendaftar, silakan buat janji bertemu terlebih dahulu dengan pemilik kos. Pendaftaran penghuni akan dilakukan langsung oleh pemilik di lokasi.
+                                </p>
+                                {kos && kos.owner ? (
+                                    <a
+                                        href={`https://wa.me/${kos.owner.no_wa?.replace(/\D/g, '')}?text=Halo%20${kos.owner.name},%20saya%20tertarik%20dengan%20Tipe%20${typeKamar.nama}%20di%20${kos.name}.%20Bisa%20atur%20jadwal%20bertemu?`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-full block"
+                                    >
+                                        <Button className="w-full text-lg font-bold h-14 rounded-2xl shadow-lg bg-[#664229] hover:bg-[#664229]/90 text-white gap-2">
+                                            <MessageCircle className="w-5 h-5" />
+                                            Buat Janji Bertemu Pemilik
+                                        </Button>
+                                    </a>
+                                ) : (
+                                    <Button disabled className="w-full text-lg font-bold h-14 rounded-2xl bg-neutral-200 text-neutral-500">
+                                        Hubungi Pemilik Kos
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
                     </div>
 
                     {/* Information Section */}
@@ -158,35 +187,6 @@ export default function Show({ typeKamar, kos }: Props) {
                                         </div>
                                     );
                                 })}
-                            </div>
-                        </div>
-
-                        <div className="mt-auto pt-8 border-t border-neutral-100 dark:border-neutral-800">
-                            <div className="p-6 rounded-2xl bg-[#664229]/5 border border-[#664229]/20 text-center space-y-4">
-                                <div className="w-12 h-12 bg-[#664229]/10 rounded-full flex items-center justify-center mx-auto text-[#664229]">
-                                    <Calendar className="w-6 h-6" />
-                                </div>
-                                <h3 className="text-lg font-bold">Ingin Menyewa Kamar Ini?</h3>
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                    Untuk mendaftar, silakan buat janji bertemu terlebih dahulu dengan pemilik kos. Pendaftaran penghuni akan dilakukan langsung oleh pemilik di lokasi.
-                                </p>
-                                {kos && kos.owner ? (
-                                    <a
-                                        href={`https://wa.me/${kos.owner.no_wa?.replace(/\D/g, '')}?text=Halo%20${kos.owner.name},%20saya%20tertarik%20dengan%20Tipe%20${typeKamar.nama}%20di%20${kos.name}.%20Bisa%20atur%20jadwal%20bertemu?`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="w-full block"
-                                    >
-                                        <Button className="w-full text-lg font-bold h-14 rounded-2xl shadow-lg bg-[#664229] hover:bg-[#664229]/90 text-white gap-2">
-                                            <MessageCircle className="w-5 h-5" />
-                                            Buat Janji Bertemu Pemilik
-                                        </Button>
-                                    </a>
-                                ) : (
-                                    <Button disabled className="w-full text-lg font-bold h-14 rounded-2xl bg-neutral-200 text-neutral-500">
-                                        Hubungi Pemilik Kos
-                                    </Button>
-                                )}
                             </div>
                         </div>
                     </div>

@@ -112,26 +112,98 @@ export default function MainLayout({ children, breadcrumbs = [] }: Props) {
                 <ArrowUp />
             </Button>
 
-            <footer className="border-t border-neutral-100 bg-white dark:border-neutral-800 dark:bg-black">
-                <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 gap-12 md:grid-cols-4 lg:grid-cols-5">
-                        <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                            <Link href="/" className="flex items-center gap-2 mb-6">
+            <footer className="relative overflow-hidden border-t border-primary/5 bg-[#fdfaf8] dark:border-primary/10 dark:bg-[#0a0807]">
+                {/* Decorative element */}
+                <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent"></div>
+
+                <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 relative z-10">
+                    <div className="grid grid-cols-1 gap-16 md:grid-cols-2 lg:grid-cols-5">
+                        <div className="lg:col-span-2">
+                            <Link href="/" className="flex items-center gap-2 mb-8 group transition-transform hover:scale-[1.02] w-fit">
                                 <AppLogo />
                             </Link>
-                            <p className="max-w-xs text-justify text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">
-                                SIKOSPEL (Sistem KOS & Pelaporan) menyediakan platform terpadu untuk mencari, mengelola, dan melaporkan hunian kos dengan mudah dan transparan.
+                            <p className="max-w-sm text-lg font-medium leading-relaxed text-neutral-600 dark:text-neutral-400 mb-10">
+                                Merevolusi cara Anda menemukan dan mengelola hunian. SIKOSPEL menghadirkan kenyamanan dan transparansi dalam satu platform terpadu.
                             </p>
+                            <div className="flex items-center gap-4">
+                                {[
+                                    { icon: Instagram, href: '#', label: 'Instagram' },
+                                    { icon: Twitter, href: '#', label: 'Twitter' },
+                                    { icon: Facebook, href: '#', label: 'Facebook' },
+                                    { icon: Mail, href: '#', label: 'Email' }
+                                ].map((social, i) => (
+                                    <a
+                                        key={i}
+                                        href={social.href}
+                                        className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white border border-primary/10 text-primary/60 shadow-sm hover:bg-primary hover:text-white hover:border-primary hover:-translate-y-1 transition-all duration-300 dark:bg-neutral-900 dark:border-primary/20"
+                                        aria-label={social.label}
+                                    >
+                                        <social.icon className="size-5" strokeWidth={2.5} />
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="space-y-8">
+                            <h4 className="text-sm font-black uppercase tracking-[0.2em] text-primary italic">Layanan</h4>
+                            <ul className="space-y-4">
+                                {['Cari Kos', 'Rekomendasi', 'Promo Spesial', 'Pusat Bantuan'].map((item, i) => (
+                                    <li key={i}>
+                                        <Link href="#" className="group flex items-center text-neutral-500 hover:text-primary transition-colors font-semibold">
+                                            <span className="h-px w-0 bg-primary group-hover:w-4 transition-all duration-300 mr-0 group-hover:mr-2"></span>
+                                            {item}
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        <div className="space-y-8">
+                            <h4 className="text-sm font-black uppercase tracking-[0.2em] text-primary italic">Perusahaan</h4>
+                            <ul className="space-y-4">
+                                {['Tentang Kami', 'Karir', 'Kontak Kami', 'Blog'].map((item, i) => (
+                                    <li key={i}>
+                                        <Link href="#" className="group flex items-center text-neutral-500 hover:text-primary transition-colors font-semibold">
+                                            <span className="h-px w-0 bg-primary group-hover:w-4 transition-all duration-300 mr-0 group-hover:mr-2"></span>
+                                            {item}
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        <div className="space-y-8">
+                            <h4 className="text-sm font-black uppercase tracking-[0.2em] text-primary italic">Kontak</h4>
+                            <ul className="space-y-6">
+                                <li className="flex items-start gap-4">
+                                    <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/5 text-primary">
+                                        <MapPin className="size-4" />
+                                    </div>
+                                    <p className="text-sm font-medium leading-relaxed text-neutral-500 dark:text-neutral-400">
+                                        Jl. Raya Properti No. 123, <br />Jakarta Selatan, 12345
+                                    </p>
+                                </li>
+                                <li className="flex items-center gap-4">
+                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/5 text-primary">
+                                        <Phone className="size-4" />
+                                    </div>
+                                    <p className="text-sm font-bold text-neutral-600 dark:text-neutral-300">
+                                        +62 21 1234 5678
+                                    </p>
+                                </li>
+                            </ul>
                         </div>
                     </div>
 
-                    <div className="mt-16 pt-8 border-t border-neutral-100 dark:border-neutral-800 flex flex-col md:flex-row justify-between items-center gap-4">
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-widest font-medium">
-                            &copy; {new Date().getFullYear()} SIKOSPEL. Dibuat dengan &hearts; untuk kenyamanan Anda.
-                        </p>
-                        <div className="flex gap-6">
-                            <Link href="/privacy" className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors">Kebijakan Privasi</Link>
-                            <Link href="/terms" className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors">Ketentuan Layanan</Link>
+                    <div className="mt-20 pt-10 border-t border-primary/5 flex flex-col md:flex-row justify-between items-center gap-8 px-6 py-4 bg-white/40 dark:bg-neutral-900/40 rounded-3xl backdrop-blur-sm border border-primary/5">
+                        <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400 font-bold uppercase tracking-widest">
+                                &copy; {new Date().getFullYear()} SIKOSPEL. All Rights Reserved.
+                            </p>
+                            <div className="flex gap-6">
+                                <Link href="/privacy" className="text-[10px] font-black uppercase tracking-[0.1em] text-neutral-400 hover:text-primary transition-colors">Privacy Policy</Link>
+                                <Link href="/terms" className="text-[10px] font-black uppercase tracking-[0.1em] text-neutral-400 hover:text-primary transition-colors">Terms of Service</Link>
+                            </div>
                         </div>
                     </div>
                 </div>

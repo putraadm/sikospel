@@ -13,48 +13,15 @@ use Illuminate\Support\Facades\DB;
 
 class FinancialReportController extends Controller
 {
-    private function getUserRole()
-    {
-        $user = auth()->user();
-        
-        // Check if user has a role
-        if (!$user || !$user->role) {
-            return null;
-        }
-        
-        return $user->role->name;
-    }
-
     public function index(Request $request)
     {
         $user = auth()->user();
-        $roleName = $this->getUserRole();
-        
-        // Handle case where user has no role
-        if (!$roleName) {
-            return Inertia::render('admin/LaporanKeuangan/Index', [
-                'payments' => [
-                    'data' => [],
-                    'links' => [],
-                    'current_page' => 1,
-                    'last_page' => 1,
-                    'total' => 0,
-                ],
-                'stats' => [
-                    'today' => 0,
-                    'month' => 0,
-                    'year' => 0,
-                    'total' => 0,
-                ],
-                'filters' => $request->only(['bulan', 'tahun', 'kos_id', 'method', 'search', 'sort', 'direction']),
-                'kosList' => [],
-                'methods' => [],
-            ]);
-        }
-        
-        $isSuperadmin = $roleName === 'superadmin';
-        $isPemilik = $roleName === 'pemilik';
+        $isSuperadmin = $user->role->name === 'superadmin';
+        $isPemilik = $user->role->name === 'pemilik';
 
+        // For stats calculation, we use the same filtering logic as the table
+        $query = $this->getQuery($request);
+        
         // Sorting
         $sortColumn = $request->input('sort', 'payment_date');
         $sortDirection = $request->input('direction', 'desc');
@@ -80,7 +47,7 @@ class FinancialReportController extends Controller
         }
 
         if ($request->filled('kos_id') && $request->kos_id !== 'all') {
-            $statsQuery->whereHas('invoice.tenancy.room.kos', fn($q) => $q->where('id', $request->kos_id));
+            $baseContext->whereHas('invoice.tenancy.room.kos', fn($q) => $q->where('id', $request->kos_id));
         }
 
         $totalToday = (clone $baseContext)->whereDate('payment_date', Carbon::today())->sum('payments.amount_paid');
@@ -98,13 +65,7 @@ class FinancialReportController extends Controller
             ->withQueryString();
 
         // Get Kos list for filter
-        if ($isSuperadmin) {
-            $kosList = Kos::all();
-        } elseif ($isPemilik) {
-            $kosList = Kos::where('owner_id', $user->id)->get();
-        } else {
-            $kosList = [];
-        }
+        $kosList = $isSuperadmin ? Kos::all() : Kos::where('owner_id', $user->id)->get();
 
         return Inertia::render('admin/LaporanKeuangan/Index', [
             'payments' => $payments,
@@ -122,69 +83,73 @@ class FinancialReportController extends Controller
 
     public function exportPdf(Request $request)
     {
-        $user = auth()->user();
-        $roleName = $this->getUserRole();
-        $isPemilik = $roleName === 'pemilik';
-
-        $payments = $this->getFilteredQuery($request, $isPemilik, $user)->get();
+        $payments = $this->getQuery($request)->get();
         $total = $payments->sum('amount_paid');
-        $bulan = $request->bulan ? Carbon::create()->month($request->bulan)->translatedFormat('F') : 'Semua';
-        $tahun = $request->tahun ?? 'Semua';
+        $bulanStr = 'Semua';
+        if ($request->filled('bulan') && $request->bulan !== 'all') {
+            $bulanStr = Carbon::create()->month($request->bulan)->translatedFormat('F');
+        }
+        $tahunStr = $request->filled('tahun') && $request->tahun !== 'all' ? $request->tahun : 'Semua';
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.financial-report', [
             'payments' => $payments,
             'total' => $total,
-            'bulan_name' => $bulan,
-            'tahun' => $tahun,
+            'bulan_name' => $bulanStr,
+            'tahun' => $tahunStr,
+            'filtered_kos' => $request->filled('kos_id') && $request->kos_id !== 'all' ? Kos::find($request->kos_id)->name : 'Semua Kos',
+            'user' => auth()->user(),
         ]);
 
-        return $pdf->download('Laporan_Keuangan_SIKOSPEL_' . now()->format('YmdHis') . '.pdf');
+        $filename = 'Laporan_Keuangan_SIKOSPEL_' . now()->format('YmdHis') . '.pdf';
+
+        if ($request->has('preview')) {
+            return $pdf->stream($filename);
+        }
+
+        return $pdf->download($filename);
     }
 
     public function exportExcel(Request $request)
     {
-        $user = auth()->user();
-        $roleName = $this->getUserRole();
-        $isPemilik = $roleName === 'pemilik';
-
-        $payments = $this->getFilteredQuery($request, $isPemilik, $user)->get();
+        $payments = $this->getQuery($request)->get();
         return \Maatwebsite\Excel\Facades\Excel::download(
             new \App\Exports\FinancialReportExport($payments), 
             'Laporan_Keuangan_SIKOSPEL_' . now()->format('YmdHis') . '.xlsx'
         );
     }
 
-    private function getBaseStatsQuery($isPemilik, $user)
+    private function getQuery(Request $request)
     {
-        $query = Payment::where('payments.status', 'sukses')
-            ->whereHas('invoice', fn($q) => $q->where('status', 'lunas'));
-        
-        if ($isPemilik) {
-            $query->whereHas('invoice.tenancy.room.kos', fn($q) => $q->where('owner_id', $user->id));
-        }
+        $user = auth()->user();
+        $isPemilik = $user->role->name === 'pemilik';
 
-        $query = Payment::select('payments.*')
-            ->with([
-                'invoice.tenancy.penghuni',
-                'invoice.tenancy.room.kos',
-                'invoice.tenancy.room.typeKamar'
-            ])
+        $query = Payment::select(
+                'payments.id',
+                'payments.invoice_id',
+                'payments.amount_paid',
+                'payments.method',
+                'payments.status',
+                'payments.payment_date',
+                'payments.created_at',
+                'payments.updated_at',
+                'invoices.billing_period',
+                'invoices.status as invoice_status',
+                'penyewaan.id as tenancy_id',
+                'rooms.room_number',
+                'rooms.type_kamar_id',
+                'type_kamars.nama as type_kamar_nama',
+                'penghuni.name as penghuni_name',
+                'kos.name as kos_name'
+            )
             ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
             ->join('penyewaan', 'invoices.tenancy_id', '=', 'penyewaan.id')
             ->join('penghuni', 'penyewaan.penghuni_id', '=', 'penghuni.user_id')
             ->join('rooms', 'penyewaan.room_id', '=', 'rooms.id')
             ->join('kos', 'rooms.kos_id', '=', 'kos.id')
-            ->join('type_kamars', 'rooms.type_kamar_id', '=', 'type_kamars.id')
+            ->leftJoin('type_kamars', 'rooms.type_kamar_id', '=', 'type_kamars.id')
             ->where('payments.status', 'sukses')
             ->where('invoices.status', 'lunas');
 
-        $this->applyFiltersToQuery($query, $request, $isPemilik, $user);
-
-        return $query;
-    }
-
-    private function applyFiltersToQuery($query, Request $request, $isPemilik, $user)
-    {
         if ($isPemilik) {
             $query->where('kos.owner_id', $user->id);
         }
@@ -214,5 +179,7 @@ class FinancialReportController extends Controller
                   ->orWhere('rooms.room_number', 'like', '%' . $searchTerm . '%');
             });
         }
+
+        return $query;
     }
 }

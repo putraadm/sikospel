@@ -16,23 +16,11 @@ interface Payment {
     payment_date: string;
     amount_paid: string | number;
     method: string;
-    invoice: {
-        billing_period: string;
-        tenancy: {
-            penghuni: {
-                name: string;
-            };
-            room: {
-                room_number: string;
-                kos: {
-                    name: string;
-                };
-                typeKamar: {
-                    nama: string;
-                };
-            };
-        };
-    };
+    billing_period: string;
+    room_number: string;
+    type_kamar_nama: string | null;
+    penghuni_name: string;
+    kos_name: string;
 }
 
 interface Props {
@@ -344,11 +332,51 @@ export default function Index({ payments, stats, filters, kosList, methods }: Pr
                         </div>
 
                         <div className="mt-6 flex flex-wrap gap-2 justify-end">
-                            <Button variant="outline" className="text-[#664229] border-[#664229] hover:bg-[#664229]/10" onClick={() => window.open(route('admin.laporan-keuangan.export-pdf', filters), '_blank')}>
-                                <FileDown className="h-4 w-4 mr-2" /> PDF
+                            <Button
+                                variant="outline"
+                                className="text-[#664229] border-[#664229] hover:bg-[#664229]/5"
+                                onClick={() => {
+                                    const params = new URLSearchParams();
+                                    Object.entries(localFilters).forEach(([key, value]) => {
+                                        if (value && value !== 'all' && key !== 'sort') {
+                                            params.append(key, value.toString());
+                                        }
+                                    });
+                                    params.append('preview', '1');
+                                    window.open(`/admin/laporan-keuangan/export-pdf?${params.toString()}`, '_blank');
+                                }}
+                            >
+                                <FileDown className="h-4 w-4 mr-2" /> Download PDF
                             </Button>
-                            <Button variant="outline" className="text-green-700 border-green-700 hover:bg-green-50" onClick={() => window.open(route('admin.laporan-keuangan.export-excel', filters), '_blank')}>
-                                <FileSpreadsheet className="h-4 w-4 mr-2" /> Excel
+                            {/* <Button
+                                variant="outline"
+                                className="text-[#664229] border-[#664229] hover:bg-[#664229]/10"
+                                onClick={() => {
+                                    const params = new URLSearchParams();
+                                    Object.entries(localFilters).forEach(([key, value]) => {
+                                        if (value && value !== 'all' && key !== 'sort') {
+                                            params.append(key, value.toString());
+                                        }
+                                    });
+                                    window.open(`/admin/laporan-keuangan/export-pdf?${params.toString()}`, '_blank');
+                                }}
+                            >
+                                <FileDown className="h-4 w-4 mr-2" /> Download PDF
+                            </Button> */}
+                            <Button
+                                variant="outline"
+                                className="text-green-700 border-green-700 hover:bg-green-50"
+                                onClick={() => {
+                                    const params = new URLSearchParams();
+                                    Object.entries(localFilters).forEach(([key, value]) => {
+                                        if (value && value !== 'all' && key !== 'sort') {
+                                            params.append(key, value.toString());
+                                        }
+                                    });
+                                    window.open(`/admin/laporan-keuangan/export-excel?${params.toString()}`, '_blank');
+                                }}
+                            >
+                                <FileSpreadsheet className="h-4 w-4 mr-2" /> Download Excel
                             </Button>
                         </div>
                     </CardContent>
@@ -367,12 +395,6 @@ export default function Index({ payments, stats, filters, kosList, methods }: Pr
                                 </TableHead>
                                 <TableHead className="text-[#664229] font-bold cursor-pointer" onClick={() => handleSort('payment_date')}>
                                     Tanggal Bayar <ArrowUpDown className="inline h-3 w-3 ml-1" />
-                                </TableHead>
-                                <TableHead className="text-[#664229] font-bold cursor-pointer" onClick={() => handleSort('penghuni_name')}>
-                                    Nama Penghuni <ArrowUpDown className="inline h-3 w-3 ml-1" />
-                                </TableHead>
-                                <TableHead className="text-[#664229] font-bold cursor-pointer" onClick={() => handleSort('kos_name')}>
-                                    Nama Kos <ArrowUpDown className="inline h-3 w-3 ml-1" />
                                 </TableHead>
                                 <TableHead className="text-[#664229] font-bold cursor-pointer" onClick={() => handleSort('type_kamar')}>
                                     Type Kamar <ArrowUpDown className="inline h-3 w-3 ml-1" />
@@ -393,22 +415,22 @@ export default function Index({ payments, stats, filters, kosList, methods }: Pr
                                 payments.data.map((payment) => (
                                     <TableRow key={payment.id} className="border-[#664229]/5 hover:bg-[#664229]/5 transition-colors">
                                         <TableCell>
-                                            <div className="font-semibold text-slate-900">{payment.invoice?.tenancy?.penghuni?.name || 'N/A'}</div>
+                                            <div className="font-semibold text-slate-900">{payment.penghuni_name || 'N/A'}</div>
                                         </TableCell>
                                         <TableCell className="text-sm">
-                                            {payment.invoice?.tenancy?.room?.kos?.name || 'N/A'}
+                                            {payment.kos_name || 'N/A'}
                                         </TableCell>
                                         <TableCell className="font-medium text-xs whitespace-nowrap">
                                             {new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(payment.payment_date))}
                                         </TableCell>
                                         <TableCell>
                                             <div className="text-xs">
-                                                <div className="font-medium text-[#664229]">{payment.invoice?.tenancy?.room?.typeKamar?.nama || 'Unknown'}</div>
-                                                <div className="text-muted-foreground">Kamar {payment.invoice?.tenancy?.room?.room_number || '-'}</div>
+                                                <div className="font-medium text-[#664229]">{payment.type_kamar_nama || 'Tidak Diketahui'}</div>
+                                                <div className="text-muted-foreground">Kamar {payment.room_number || '-'}</div>
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-sm">
-                                            {payment.invoice?.billing_period ? new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(new Date(payment.invoice.billing_period)) : '-'}
+                                            {payment.billing_period ? new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(new Date(payment.billing_period)) : '-'}
                                         </TableCell>
                                         <TableCell>
                                             <div className="font-bold text-[#664229]">{formatCurrency(payment.amount_paid)}</div>
@@ -422,7 +444,7 @@ export default function Index({ payments, stats, filters, kosList, methods }: Pr
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
+                                    <TableCell colSpan={7} className="w-full h-full text-center text-muted-foreground">
                                         Tidak ada data pemasukan ditemukan.
                                     </TableCell>
                                 </TableRow>

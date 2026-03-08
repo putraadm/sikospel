@@ -60,4 +60,9 @@ class User extends Authenticatable
     {
         return $this->hasOne(Penghuni::class, 'user_id', 'id');
     }
+
+    public function typeKamars()
+    {
+        return $this->hasMany(TypeKamar::class, 'user_id', 'id');
+    }
 }

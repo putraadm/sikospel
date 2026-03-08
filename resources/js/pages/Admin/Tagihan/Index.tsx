@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Plus, MoreHorizontal, Eye, Download, Info, CheckCircle2, AlertCircle, FileText } from 'lucide-react';
+import { Plus, MoreHorizontal, Eye, Download, Info, CheckCircle2, AlertCircle, FileText, Calendar, Edit, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
 
@@ -10,6 +10,10 @@ import { DataTable } from '@/components/ui/data-table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -79,6 +83,20 @@ export default function Tagihan({ invoices = [] }: Props) {
     const [confirmPaidId, setConfirmPaidId] = useState<number | null>(null);
     const [isMarkingPaid, setIsMarkingPaid] = useState(false);
 
+    // New States
+    const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [genMonth, setGenMonth] = useState(new Date().getMonth() + 1);
+    const [genYear, setGenYear] = useState(new Date().getFullYear());
+
+    const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [editAmount, setEditAmount] = useState<string>('');
+    const [editDueDate, setEditDueDate] = useState<string>('');
+
+    const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const getInvoiceStatusBadge = (status: string) => {
         const variants: Record<string, string> = {
             lunas: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-green-200',
@@ -100,12 +118,71 @@ export default function Tagihan({ invoices = [] }: Props) {
             onSuccess: () => {
                 setConfirmPaidId(null);
                 setIsMarkingPaid(false);
+                toast.success('Tagihan berhasil ditandai lunas');
             },
             onError: () => {
                 setIsMarkingPaid(false);
             },
             preserveScroll: true
         });
+    };
+
+    const handleGenerate = () => {
+        setIsGenerating(true);
+        router.post(`/admin/tagihan/generate`, {
+            month: genMonth,
+            year: genYear,
+        }, {
+            onSuccess: () => {
+                setIsGenerateDialogOpen(false);
+                setIsGenerating(false);
+            },
+            onError: () => {
+                setIsGenerating(false);
+            },
+            preserveScroll: true
+        });
+    };
+
+    const handleUpdate = () => {
+        if (!editingInvoice) return;
+        setIsUpdating(true);
+        router.patch(`/admin/tagihan/${editingInvoice.id}`, {
+            amount: editAmount,
+            due_date: editDueDate,
+        }, {
+            onSuccess: () => {
+                setEditingInvoice(null);
+                setIsUpdating(false);
+                toast.success('Tagihan berhasil diperbarui');
+            },
+            onError: () => {
+                setIsUpdating(false);
+            },
+            preserveScroll: true
+        });
+    };
+
+    const handleDelete = () => {
+        if (!deletingId) return;
+        setIsDeleting(true);
+        router.delete(`/admin/tagihan/${deletingId}`, {
+            onSuccess: () => {
+                setDeletingId(null);
+                setIsDeleting(false);
+                toast.success('Tagihan berhasil dihapus');
+            },
+            onError: () => {
+                setIsDeleting(false);
+            },
+            preserveScroll: true
+        });
+    };
+
+    const openEditDialog = (invoice: Invoice) => {
+        setEditingInvoice(invoice);
+        setEditAmount(invoice.amount.toString());
+        setEditDueDate(invoice.due_date.split('T')[0]); // Take YYYY-MM-DD
     };
 
     const columnsPembayaran: ColumnDef<Invoice>[] = [
@@ -216,6 +293,20 @@ export default function Tagihan({ invoices = [] }: Props) {
                             <CheckCircle2 className="mr-2 h-4 w-4 text-green-600" />
                             Tandai Lunas (Cash)
                         </DropdownMenuItem>
+                        <DropdownMenuItem
+                            onClick={() => openEditDialog(row.original)}
+                        >
+                            <Edit className="mr-2 h-4 w-4 text-blue-600" />
+                            Ubah Tagihan
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            disabled={row.original.status === 'lunas'}
+                            className="text-red-600"
+                            onClick={() => setDeletingId(row.original.id)}
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Hapus Tagihan
+                        </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
             ),
@@ -232,6 +323,15 @@ export default function Tagihan({ invoices = [] }: Props) {
                         <p className="text-sm text-muted-foreground mt-1">
                             Pantau status pembayaran tagihan semua penghuni kos secara real-time
                         </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            onClick={() => setIsGenerateDialogOpen(true)}
+                            className="bg-[#664229] hover:bg-[#523521] text-white flex items-center gap-2"
+                        >
+                            <Calendar className="h-4 w-4" />
+                            Generate Tagihan
+                        </Button>
                     </div>
                 </div>
                 <div className="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border bg-white dark:bg-[#161615] shadow-sm">
@@ -310,6 +410,122 @@ export default function Tagihan({ invoices = [] }: Props) {
                                 disabled={isMarkingPaid}
                             >
                                 {isMarkingPaid ? 'Memproses...' : 'Ya, Tandai Lunas'}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Generate Tagihan Dialog */}
+                <Dialog open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Generate Tagihan Otomatis</DialogTitle>
+                            <DialogDescription>
+                                Pilih periode bulan dan tahun untuk mengenerate tagihan bagi semua penghuni yang aktif.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Bulan</Label>
+                                    <Select value={genMonth.toString()} onValueChange={(v) => setGenMonth(parseInt(v))}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Bulan" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {Array.from({ length: 12 }, (_, i) => (
+                                                <SelectItem key={i + 1} value={(i + 1).toString()}>
+                                                    {new Date(0, i).toLocaleDateString('id-ID', { month: 'long' })}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Tahun</Label>
+                                    <Select value={genYear.toString()} onValueChange={(v) => setGenYear(parseInt(v))}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Tahun" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {[2024, 2025, 2026].map((y) => (
+                                                <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsGenerateDialogOpen(false)}>Batal</Button>
+                            <Button
+                                className="bg-[#664229] hover:bg-[#523521] text-white"
+                                onClick={handleGenerate}
+                                disabled={isGenerating}
+                            >
+                                {isGenerating ? 'Mengenerate...' : 'Generate Sekarang'}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Edit Tagihan Dialog */}
+                <Dialog open={!!editingInvoice} onOpenChange={(open) => !open && setEditingInvoice(null)}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Ubah Tagihan</DialogTitle>
+                            <DialogDescription>
+                                Perbarui detail tagihan untuk {editingInvoice?.tenancy?.penghuni?.name}.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="space-y-2">
+                                <Label>Total Tagihan (Rp)</Label>
+                                <Input
+                                    type="number"
+                                    value={editAmount}
+                                    onChange={(e) => setEditAmount(e.target.value)}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Batas Waktu Pembayaran (Due Date)</Label>
+                                <Input
+                                    type="date"
+                                    value={editDueDate}
+                                    onChange={(e) => setEditDueDate(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setEditingInvoice(null)}>Batal</Button>
+                            <Button
+                                className="bg-[#664229] hover:bg-[#523521] text-white"
+                                onClick={handleUpdate}
+                                disabled={isUpdating}
+                            >
+                                {isUpdating ? 'Menyimpan...' : 'Simpan Perubahan'}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Delete Confirmation Dialog */}
+                <Dialog open={deletingId !== null} onOpenChange={(open) => !open && setDeletingId(null)}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Hapus Tagihan</DialogTitle>
+                            <DialogDescription>
+                                Apakah Anda yakin ingin menghapus tagihan ini? Tindakan ini tidak dapat dibatalkan.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setDeletingId(null)}>Batal</Button>
+                            <Button
+                                variant="destructive"
+                                onClick={handleDelete}
+                                disabled={isDeleting}
+                            >
+                                {isDeleting ? 'Menghapus...' : 'Ya, Hapus'}
                             </Button>
                         </DialogFooter>
                     </DialogContent>

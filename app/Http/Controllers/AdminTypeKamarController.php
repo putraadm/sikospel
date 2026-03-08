@@ -14,7 +14,12 @@ class AdminTypeKamarController extends Controller
 {
     public function index()
     {
-        $typeKamars = TypeKamar::with('images')->get();
+        $user = auth()->user();
+        if ($user->role->name === 'superadmin') {
+            $typeKamars = TypeKamar::with('images')->get();
+        } else {
+            $typeKamars = TypeKamar::with('images')->where('user_id', $user->id)->get();
+        }
         return Inertia::render('Admin/TypeKamar/Index', [
             'typeKamars' => $typeKamars
         ]);
@@ -27,10 +32,15 @@ class AdminTypeKamarController extends Controller
             'deskripsi' => 'nullable|string',
             'harga' => 'required|numeric',
             'facilities' => 'nullable|array',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048'
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048'
         ]);
 
-        $typeKamar = TypeKamar::create($request->except('images'));
+        $typeKamar = auth()->user()->typeKamars()->create([
+            'nama' => $request->nama,
+            'deskripsi' => $request->deskripsi,
+            'harga' => $request->harga,
+            'facilities' => $request->facilities,
+        ]);
 
         if ($request->hasFile('images')) {
             $manager = new ImageManager(new Driver());
@@ -63,11 +73,22 @@ class AdminTypeKamarController extends Controller
             'deskripsi' => 'nullable|string',
             'harga' => 'required|numeric',
             'facilities' => 'nullable|array',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048'
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048'
         ]);
 
-        $typeKamar = TypeKamar::findOrFail($id);
-        $typeKamar->update($request->except('images'));
+        $user = auth()->user();
+        $query = TypeKamar::where('id', $id);
+        if ($user->role->name !== 'superadmin') {
+            $query->where('user_id', $user->id);
+        }
+        $typeKamar = $query->firstOrFail();
+        
+        $typeKamar->update([
+            'nama' => $request->nama,
+            'deskripsi' => $request->deskripsi,
+            'harga' => $request->harga,
+            'facilities' => $request->facilities,
+        ]);
 
         if ($request->hasFile('images')) {
             $manager = new ImageManager(new Driver());
@@ -95,7 +116,11 @@ class AdminTypeKamarController extends Controller
 
     public function destroy($id)
     {
-        $typeKamar = TypeKamar::with('images')->findOrFail($id);
+        $typeKamar = TypeKamar::with('images')->where('id', $id);
+        if (auth()->user()->role->name !== 'superadmin') {
+            $typeKamar->where('user_id', auth()->id());
+        }
+        $typeKamar = $typeKamar->firstOrFail();
         
         // Delete images from storage
         foreach ($typeKamar->images as $image) {
@@ -110,7 +135,13 @@ class AdminTypeKamarController extends Controller
 
     public function deleteImage($id)
     {
-        $image = RoomImage::findOrFail($id);
+        $image = RoomImage::with('typeKamar')->findOrFail($id);
+        
+        // Ownership check
+        if (auth()->user()->role->name !== 'superadmin' && $image->typeKamar->user_id !== auth()->id()) {
+            abort(403);
+        }
+
         Storage::disk('public')->delete($image->gambar);
         $image->delete();
 

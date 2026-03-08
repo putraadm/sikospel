@@ -16,14 +16,27 @@ class AdminKamarController extends Controller
 {
     public function index()
     {
-        $rooms = Room::with(['kos.owner.user', 'typeKamar'])->get();
-        $kos = Kos::with('owner.user')->get();
-        $typeKamars = TypeKamar::all();
-        
+        $user = auth()->user();
+        $isSuperAdmin = $user->role->name === 'superadmin';
+
+        $roomQuery = Room::with(['kos.owner.user', 'typeKamar']);
+        $kosQuery = Kos::with('owner.user');
+        $typeKamarQuery = TypeKamar::query();
+
+        if (!$isSuperAdmin) {
+            $roomQuery->whereHas('kos.owner', function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+            });
+            $kosQuery->whereHas('owner', function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+            });
+            $typeKamarQuery->where('user_id', $user->id);
+        }
+
         return Inertia::render('Admin/Room/Index', [
-            'rooms' => $rooms,
-            'kos' => $kos,
-            'typeKamars' => $typeKamars,
+            'rooms' => $roomQuery->get(),
+            'kos' => $kosQuery->get(),
+            'typeKamars' => $typeKamarQuery->get(),
         ]);
     }
 
@@ -34,7 +47,6 @@ class AdminKamarController extends Controller
             'room_number' => 'required|string|max:255',
             'type_kamar_id' => 'required|exists:type_kamars,id',
             'status' => 'required|string|max:255',
-            'description' => 'nullable|string|max:500',
         ]);
 
         $data = $request->all();
@@ -46,15 +58,23 @@ class AdminKamarController extends Controller
 
     public function update(Request $request, $id)
     {
+        $user = auth()->user();
+        $isSuperAdmin = $user->role->name === 'superadmin';
+
         $request->validate([
             'kos_id' => 'required|exists:kos,id',
             'room_number' => 'required|string|max:255',
             'type_kamar_id' => 'required|exists:type_kamars,id',
             'status' => 'required|string|max:255',
-            'description' => 'nullable|string|max:500',
         ]);
 
-        $room = Room::findOrFail($id);
+        $room = Room::where('id', $id);
+        if (!$isSuperAdmin) {
+            $room->whereHas('kos.owner', function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+            });
+        }
+        $room = $room->firstOrFail();
         $data = $request->all();
 
         $room->update($data);
@@ -64,7 +84,16 @@ class AdminKamarController extends Controller
 
     public function destroy($id)
     {
-        $room = Room::findOrFail($id);
+        $user = auth()->user();
+        $isSuperAdmin = $user->role->name === 'superadmin';
+
+        $room = Room::where('id', $id);
+        if (!$isSuperAdmin) {
+            $room->whereHas('kos.owner', function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+            });
+        }
+        $room = $room->firstOrFail();
         
         $room->delete();
 

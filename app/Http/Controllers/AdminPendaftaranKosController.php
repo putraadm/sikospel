@@ -19,15 +19,27 @@ class AdminPendaftaranKosController extends Controller
 {
     public function index()
     {
-        $pendaftaranKos = PendaftaranKos::with(['kos', 'assignedRoom.typeKamar', 'typeKamar'])->get();
+        $user = auth()->user();
+        $query = PendaftaranKos::with(['kos', 'assignedRoom.typeKamar', 'typeKamar']);
+
+        if ($user->role->name === 'pemilik') {
+            $query->whereHas('kos', function($q) use ($user) {
+                $q->where('owner_id', $user->id);
+            });
+        }
 
         return Inertia::render('Admin/PendaftaranKos/Index', [
-            'pendaftaranKos' => $pendaftaranKos,
+            'pendaftaranKos' => $query->get(),
         ]);
     }
 
     public function show(PendaftaranKos $pendaftaranKos)
     {
+        $user = auth()->user();
+        if ($user->role->name === 'pemilik' && $pendaftaranKos->kos->owner_id !== $user->id) {
+            abort(403, 'Unauthorized access to this registration.');
+        }
+
         $pendaftaranKos->load(['kos.rooms.typeKamar', 'assignedRoom.typeKamar', 'typeKamar']);
 
         $availableRooms = Room::where('kos_id', $pendaftaranKos->kos_id)
@@ -47,6 +59,11 @@ class AdminPendaftaranKosController extends Controller
 
     public function update(Request $request, PendaftaranKos $pendaftaranKos)
     {
+        $user = auth()->user();
+        if ($user->role->name === 'pemilik' && $pendaftaranKos->kos->owner_id !== $user->id) {
+            abort(403, 'Unauthorized access to this registration.');
+        }
+
         $rules = [
             'status' => 'required|in:menunggu,diterima,ditolak,dibatalkan',
             'notes' => 'nullable|string',

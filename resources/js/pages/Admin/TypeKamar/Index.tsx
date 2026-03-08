@@ -384,6 +384,7 @@ export default function Index({ typeKamars }: Props) {
                                         </div>
                                     ))}
                                 </div>
+                                {errors.facilities && <p className="text-sm text-red-600 mt-1">{errors.facilities}</p>}
                             </div>
                             <div>
                                 <div className="flex items-center justify-between mb-2">
@@ -450,6 +451,7 @@ export default function Index({ typeKamars }: Props) {
                                     value={editData.nama}
                                     onChange={(e) => setEditData({ ...editData, nama: e.target.value })}
                                 />
+                                {errors.nama && <p className="text-sm text-red-600">{errors.nama}</p>}
                             </div>
                             <div>
                                 <Label htmlFor="edit-harga">Harga (Per Hari)</Label>
@@ -459,6 +461,7 @@ export default function Index({ typeKamars }: Props) {
                                     value={editData.harga}
                                     onChange={(e) => setEditData({ ...editData, harga: e.target.value })}
                                 />
+                                {errors.harga && <p className="text-sm text-red-600">{errors.harga}</p>}
                             </div>
                             <div>
                                 <Label htmlFor="edit-deskripsi">Deskripsi</Label>
@@ -467,6 +470,7 @@ export default function Index({ typeKamars }: Props) {
                                     value={editData.deskripsi}
                                     onChange={(e) => setEditData({ ...editData, deskripsi: e.target.value })}
                                 />
+                                {errors.deskripsi && <p className="text-sm text-red-600">{errors.deskripsi}</p>}
                             </div>
                             <div>
                                 <Label className="mb-2 block">Fasilitas Kamar</Label>
@@ -490,6 +494,7 @@ export default function Index({ typeKamars }: Props) {
                                         </div>
                                     ))}
                                 </div>
+                                {errors.facilities && <p className="text-sm text-red-600 mt-1">{errors.facilities}</p>}
                             </div>
                             <div>
                                 <div className="flex items-center justify-between mb-2">
