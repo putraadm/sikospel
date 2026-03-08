@@ -14,9 +14,13 @@ class PublicKosController extends Controller
             ->where('slug', $slug)
             ->firstOrFail();
 
+        $typeKamars = \App\Models\TypeKamar::whereHas('rooms', function($q) use ($kos) {
+            $q->where('kos_id', $kos->id);
+        })->with('images')->get();
+
         return Inertia::render('Public/Kos/Show', [
             'kos' => $kos,
-            'typeKamars' => \App\Models\TypeKamar::with('images')->get(),
+            'typeKamars' => $typeKamars,
         ]);
     }
 }

@@ -49,6 +49,7 @@ class AdminKosController extends Controller
             'address' => 'required|string|max:500',
             'description' => 'required|string',
             'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'gender_type' => 'required|in:putra,putri,campuran',
         ];
 
         if ($user->role->name === 'superadmin') {
@@ -129,6 +130,7 @@ class AdminKosController extends Controller
             'address' => 'required|string|max:500',
             'description' => 'required|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'gender_type' => 'required|in:putra,putri,campuran',
         ];
 
         if ($user->role->name === 'superadmin') {

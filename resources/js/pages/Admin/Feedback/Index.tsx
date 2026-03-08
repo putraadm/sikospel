@@ -114,6 +114,7 @@ export default function Index({ feedbacks }: Props) {
                         <DataTable
                             columns={columns}
                             data={feedbacks}
+                            emptyMessage="Tidak ada Kritik & Saran yang masuk"
                         />
                     </CardContent>
                 </Card>

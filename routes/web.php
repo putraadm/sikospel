@@ -57,6 +57,7 @@ Route::get('pendaftaran-kos-{slug?}', [PublicPendaftaranKosController::class, 'c
 Route::post('pendaftaran-kos', [PublicPendaftaranKosController::class, 'store'])->name('public.pendaftaran-kos.store');
 Route::get('pendaftaran-kos/sukses/{id}', [PublicPendaftaranKosController::class, 'success'])->name('public.pendaftaran-kos.sukses');
 Route::get('kos/{slug}', [PublicKosController::class, 'show'])->name('public.kos.show');
+Route::get('tipe-kamar/{id}', [App\Http\Controllers\PublicTypeKamarController::class, 'show'])->name('public.type-kamar.show');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('payment/token', [App\Http\Controllers\PaymentController::class, 'getSnapToken'])->name('payment.token');
@@ -135,35 +136,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('laporan-keuangan/export-pdf', [FinancialReportController::class, 'exportPdf'])->name('admin.laporan-keuangan.export-pdf');
             Route::get('laporan-keuangan/export-excel', [FinancialReportController::class, 'exportExcel'])->name('admin.laporan-keuangan.export-excel');
 
-            Route::get('tagihan', function () {
-                return Inertia::render('admin/Tagihan/Index', [
-                    'invoices' => Invoice::with(['tenancy.penghuni', 'tenancy.room.kos', 'tenancy.room.typeKamar', 'payments'])->latest()->get(),
-                ]);
-            });
-            Route::get('tagihan/create', function (Request $request) {
-                $room = null;
-                if ($request->has('room_id')) {
-                    $room = Room::with(['typeKamar', 'kos'])->find($request->room_id);
-                }
-                return Inertia::render('admin/Tagihan/Create', [
-                    'kos' => Kos::all(),
-                    'rooms' => Room::with(['typeKamar', 'kos'])->get(),
-                    'room' => $room,
-                ]);
-            });
-            Route::post('tagihan', function (Request $request) {
-                $request->validate([
-                    'room_id' => 'required|exists:rooms,id',
-                    'billing_date' => 'required|integer|min:1|max:31',
-                ]);
-
-                $room = Room::findOrFail($request->room_id);
-                $room->update([
-                    'billing_date' => $request->billing_date,
-                ]);
-
-                return redirect()->route('admin.tagihan.index')->with('success', 'Pengaturan tagihan berhasil disimpan.');
-            })->name('admin.tagihan.index');
+            // Tagihan
+            Route::get('tagihan', [App\Http\Controllers\AdminInvoiceController::class, 'index'])->name('admin.tagihan.index');
+            Route::get('tagihan/create', [App\Http\Controllers\AdminInvoiceController::class, 'create'])->name('admin.tagihan.create');
+            Route::post('tagihan', [App\Http\Controllers\AdminInvoiceController::class, 'updateBillingDate'])->name('admin.tagihan.update-date');
+            Route::post('tagihan/generate', [App\Http\Controllers\AdminInvoiceController::class, 'bulkGenerate'])->name('admin.tagihan.bulk-generate');
+            Route::patch('tagihan/{id}', [App\Http\Controllers\AdminInvoiceController::class, 'update'])->name('admin.tagihan.update');
+            Route::delete('tagihan/{id}', [App\Http\Controllers\AdminInvoiceController::class, 'destroy'])->name('admin.tagihan.destroy');
+            Route::post('tagihan/{id}/mark-paid', [App\Http\Controllers\AdminInvoiceController::class, 'markAsPaid'])->name('admin.tagihan.mark-paid');
             Route::get('feedback', [AdminFeedbackController::class, 'index'])->name('admin.feedback.index');
         });
     });

@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { CreditCard, Calendar, AlertTriangle, CheckCircle, Clock, Loader2, FileText } from 'lucide-react';
+import { CreditCard, Calendar, AlertTriangle, CheckCircle, Clock, Loader2, FileText, ShieldCheck, Receipt, ArrowRight, Home } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -18,10 +18,11 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Tagihan', href: '/penghuni/tagihan' },
+    { title: 'Laporan Tagihan', href: '/penghuni/tagihan' },
 ];
 
 interface InvoiceData {
@@ -66,11 +67,11 @@ export default function Tagihan({ invoices, midtrans_client_key, midtrans_is_pro
     useEffect(() => {
         if (paymentStatus === 'success') {
             setShowSuccessDialog(true);
-            // Clean up the URL
             const newUrl = url.split('?')[0];
             router.visit(newUrl, { replace: true, preserveState: true, preserveScroll: true });
         }
     }, [paymentStatus, url]);
+
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
 
@@ -82,22 +83,22 @@ export default function Tagihan({ invoices, midtrans_client_key, midtrans_is_pro
 
     const statusConfig = {
         belum_dibayar: {
-            label: 'Belum Dibayar',
-            icon: <Clock className="h-4 w-4" />,
-            badgeClass: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-            borderClass: 'border-l-yellow-500',
+            label: 'BELUM DIBAYAR',
+            icon: <Clock className="h-3 w-3" />,
+            badgeClass: 'bg-amber-50 text-amber-700 border-amber-100',
+            borderClass: 'border-l-amber-500',
         },
         lunas: {
-            label: 'Lunas',
-            icon: <CheckCircle className="h-4 w-4" />,
-            badgeClass: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-            borderClass: 'border-l-green-500',
+            label: 'LUNAS',
+            icon: <CheckCircle className="h-3 w-3" />,
+            badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+            borderClass: 'border-l-emerald-500',
         },
         terlambat: {
-            label: 'Terlambat',
-            icon: <AlertTriangle className="h-4 w-4" />,
-            badgeClass: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-            borderClass: 'border-l-red-500',
+            label: 'TERLAMBAT',
+            icon: <AlertTriangle className="h-3 w-3" />,
+            badgeClass: 'bg-rose-50 text-rose-700 border-rose-100',
+            borderClass: 'border-l-rose-500',
         },
     };
 
@@ -109,7 +110,6 @@ export default function Tagihan({ invoices, midtrans_client_key, midtrans_is_pro
     };
 
     useEffect(() => {
-        // Load Midtrans Snap Script
         const script = document.createElement('script');
         script.src = midtrans_is_production
             ? 'https://app.midtrans.com/snap/snap.js'
@@ -174,162 +174,225 @@ export default function Tagihan({ invoices, midtrans_client_key, midtrans_is_pro
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Tagihan" />
-            <div className="flex h-full flex-1 flex-col gap-6 p-4 md:p-6 overflow-x-hidden">
+            <Head title="Tagihan Saya" />
+            <div className="flex flex-1 flex-col gap-8 p-6 md:p-10 bg-[#fafafa]">
 
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Tagihan Saya</h1>
-                    <p className="text-sm text-muted-foreground mt-1">
-                        Daftar tagihan sewa kos Anda.
-                    </p>
+                {/* Formal Header Section */}
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-8">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-[#664229] font-bold text-xs uppercase tracking-[0.2em] mb-2">
+                            <ShieldCheck size={14} /> Administrasi Keuangan
+                        </div>
+                        <h1 className="text-4xl font-light text-slate-900 tracking-tight">
+                            Laporan <span className="font-semibold text-[#664229]">Tagihan Saya</span>
+                        </h1>
+                        <p className="text-slate-500 font-medium tracking-tight">Daftar kewajiban pembayaran dan riwayat transaksi resmi.</p>
+                    </div>
                 </div>
 
-                {/* Summary */}
-                <div className="grid gap-4 md:grid-cols-3">
-                    <Card className="border-t-4 border-t-yellow-500 shadow-sm">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium text-gray-600">Belum Dibayar</CardTitle>
-                            <Clock className="h-4 w-4 text-yellow-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{belumDibayar.length}</div>
+                {/* KPI Overview */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <Card className="border-none shadow-sm bg-white ring-1 ring-slate-100 rounded-xl overflow-hidden">
+                        <CardContent className="p-0">
+                            <div className="flex items-stretch h-32">
+                                <div className="w-1.5 bg-amber-500"></div>
+                                <div className="flex-1 p-6 flex flex-col justify-between">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Belum Terbayar</span>
+                                    <h3 className="text-3xl font-bold text-slate-900 tracking-tighter">{belumDibayar.length}</h3>
+                                </div>
+                                <div className="p-6 flex items-center">
+                                    <div className="h-12 w-12 bg-slate-50 rounded-xl flex items-center justify-center">
+                                        <Clock className="text-slate-400" size={24} />
+                                    </div>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
-                    <Card className="border-t-4 border-t-green-500 shadow-sm">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium text-gray-600">Lunas</CardTitle>
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{lunas.length}</div>
+
+                    <Card className="border-none shadow-sm bg-white ring-1 ring-slate-100 rounded-xl overflow-hidden">
+                        <CardContent className="p-0">
+                            <div className="flex items-stretch h-32">
+                                <div className="w-1.5 bg-emerald-500"></div>
+                                <div className="flex-1 p-6 flex flex-col justify-between">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Transaksi Lunas</span>
+                                    <h3 className="text-3xl font-bold text-slate-900 tracking-tighter">{lunas.length}</h3>
+                                </div>
+                                <div className="p-6 flex items-center">
+                                    <div className="h-12 w-12 bg-slate-50 rounded-xl flex items-center justify-center">
+                                        <CheckCircle className="text-slate-400" size={24} />
+                                    </div>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
-                    <Card className="border-t-4 border-t-[#664229] shadow-sm">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium text-gray-600">Total Tagihan</CardTitle>
-                            <CreditCard className="h-4 w-4 text-[#664229]" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{invoices.length}</div>
+
+                    <Card className="border-none shadow-sm bg-white ring-1 ring-slate-100 rounded-xl overflow-hidden">
+                        <CardContent className="p-0">
+                            <div className="flex items-stretch h-32">
+                                <div className="w-1.5 bg-[#664229]"></div>
+                                <div className="flex-1 p-6 flex flex-col justify-between">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Invoice</span>
+                                    <h3 className="text-3xl font-bold text-slate-900 tracking-tighter">{invoices.length}</h3>
+                                </div>
+                                <div className="p-6 flex items-center">
+                                    <div className="h-12 w-12 bg-slate-50 rounded-xl flex items-center justify-center">
+                                        <Receipt className="text-slate-400" size={24} />
+                                    </div>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
 
                 {/* Invoice List */}
-                {invoices.length > 0 ? (
-                    <div className="space-y-3">
-                        {invoices.map((invoice) => {
-                            const config = statusConfig[invoice.status];
-                            return (
-                                <Card key={invoice.id} className={`shadow-sm border-l-4 ${config.borderClass}`}>
-                                    <CardContent className="p-4">
-                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                            <div className="space-y-1">
-                                                <div className="flex items-center gap-2">
-                                                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                                                        Tagihan {formatPeriod(invoice.billing_period)}
-                                                    </h3>
-                                                    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${config.badgeClass}`}>
-                                                        {config.icon}
-                                                        {config.label}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                                    <span className="flex items-center gap-1">
-                                                        <Calendar className="h-3.5 w-3.5" />
-                                                        Jatuh tempo: {formatDate(invoice.due_date)}
-                                                    </span>
-                                                    <span>
-                                                        Kamar {invoice.tenancy?.room?.room_number} - {invoice.tenancy?.room?.kos?.name}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div className="text-right flex flex-col items-end gap-2">
-                                                <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                                                    {formatCurrency(Number(invoice.amount))}
-                                                </p>
-                                                {invoice.status === 'lunas' && invoice.payments && invoice.payments.length > 0 && (
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        className="mt-2 border-[#664229] text-[#664229] hover:bg-[#664229]/5"
-                                                        onClick={() => handlePrintReceipt(invoice.payments![0].id)}
-                                                    >
-                                                        <FileText className="h-4 w-4 mr-2" />
-                                                        Cetak Struk
-                                                    </Button>
-                                                )}
-                                                {(invoice.status === 'belum_dibayar' || invoice.status === 'terlambat') && (
-                                                    <div className="mt-4 space-y-3 w-full sm:max-w-xs ml-auto">
-                                                        <div className="space-y-1.5">
-                                                            <Label htmlFor={`feedback-${invoice.id}`} className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                                                                Kritik & Saran (Opsional)
-                                                            </Label>
-                                                            <Textarea
-                                                                id={`feedback-${invoice.id}`}
-                                                                placeholder="Berikan masukan Anda..."
-                                                                className="text-xs min-h-[60px] resize-none"
-                                                                value={feedbacks[invoice.id] || ''}
-                                                                onChange={(e) => handleFeedbackChange(invoice.id, e.target.value)}
-                                                                maxLength={255}
-                                                            />
-                                                        </div>
-                                                        <Button
-                                                            size="sm"
-                                                            className="w-full bg-[#664229] hover:bg-[#4d321f]"
-                                                            onClick={() => handlePayment(invoice.id)}
-                                                            disabled={loadingInvoiceId === invoice.id}
-                                                        >
-                                                            {loadingInvoiceId === invoice.id ? (
-                                                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                                            ) : (
-                                                                <CreditCard className="h-4 w-4 mr-2" />
-                                                            )}
-                                                            Bayar Sekarang
-                                                        </Button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            );
-                        })}
+                <div className="space-y-6">
+                    <div className="flex items-center gap-4">
+                        <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] whitespace-nowrap">Daftar Tagihan</h2>
+                        <div className="w-full h-[1px] bg-slate-200"></div>
                     </div>
-                ) : (
-                    <Card className="shadow-sm">
-                        <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                            <CreditCard className="h-12 w-12 text-gray-300 mb-4" />
-                            <h3 className="font-semibold text-gray-600 dark:text-gray-400 mb-1">Belum Ada Tagihan</h3>
-                            <p className="text-sm text-muted-foreground">
-                                Tagihan sewa Anda akan muncul di sini.
-                            </p>
-                        </CardContent>
-                    </Card>
-                )}
+
+                    {invoices.length > 0 ? (
+                        <div className="space-y-4">
+                            {invoices.map((invoice) => {
+                                const config = statusConfig[invoice.status];
+                                return (
+                                    <Card key={invoice.id} className="border-none shadow-sm ring-1 ring-slate-100 bg-white overflow-hidden transition-all hover:ring-[#664229]/20">
+                                        <CardContent className="p-0">
+                                            <div className="flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
+                                                {/* Left: Info */}
+                                                <div className="flex-1 p-8">
+                                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                                                        <div className="space-y-1">
+                                                            <p className="text-[10px] font-black text-[#664229] uppercase tracking-widest leading-none mb-1">Periode Penagihan</p>
+                                                            <h3 className="text-xl font-bold text-slate-900 tracking-tight">
+                                                                Tagihan {formatPeriod(invoice.billing_period)}
+                                                            </h3>
+                                                        </div>
+                                                        <Badge variant="outline" className={`rounded-md px-3 py-1 font-black text-[9px] tracking-[0.1em] border ${config.badgeClass} flex items-center gap-1.5 h-fit whitespace-nowrap`}>
+                                                            {config.icon}
+                                                            {config.label}
+                                                        </Badge>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="h-10 w-10 bg-slate-50 flex items-center justify-center rounded-lg text-slate-300">
+                                                                <Calendar size={18} />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Jatuh Tempo</p>
+                                                                <p className="text-sm font-bold text-slate-700">{formatDate(invoice.due_date)}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="h-10 w-10 bg-slate-50 flex items-center justify-center rounded-lg text-slate-300">
+                                                                <Home size={18} />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Unit Hunian</p>
+                                                                <p className="text-sm font-bold text-slate-700">{invoice.tenancy?.room?.room_number} - {invoice.tenancy?.room?.kos?.name}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Right: Actions */}
+                                                <div className="w-full lg:w-80 p-8 bg-slate-50/50 flex flex-col justify-center items-center lg:items-end text-center lg:text-right gap-6">
+                                                    <div className="space-y-1">
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Total Kewajiban</p>
+                                                        <p className="text-3xl font-black text-slate-900 tracking-tighter">
+                                                            {formatCurrency(Number(invoice.amount))}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="w-full space-y-3">
+                                                        {invoice.status === 'lunas' && invoice.payments && invoice.payments.length > 0 && (
+                                                            <Button
+                                                                variant="outline"
+                                                                className="w-full border-[#664229] text-[#664229] hover:bg-[#664229] hover:text-white rounded-lg font-bold text-xs py-5 transition-all"
+                                                                onClick={() => handlePrintReceipt(invoice.payments![0].id)}
+                                                            >
+                                                                <FileText className="h-4 w-4 mr-2" />
+                                                                CETAK BUKTI BAYAR
+                                                            </Button>
+                                                        )}
+                                                        {(invoice.status === 'belum_dibayar' || invoice.status === 'terlambat') && (
+                                                            <div className="space-y-4 w-full">
+                                                                <div className="space-y-2 text-left">
+                                                                    <Label htmlFor={`feedback-${invoice.id}`} className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                                                                        Lampiran Saran (Opsional)
+                                                                    </Label>
+                                                                    <Textarea
+                                                                        id={`feedback-${invoice.id}`}
+                                                                        placeholder="Tambahkan catatan untuk manajemen..."
+                                                                        className="text-xs min-h-[80px] border-slate-200 focus:ring-[#664229]/20 focus:border-[#664229] rounded-lg"
+                                                                        value={feedbacks[invoice.id] || ''}
+                                                                        onChange={(e) => handleFeedbackChange(invoice.id, e.target.value)}
+                                                                        maxLength={255}
+                                                                    />
+                                                                </div>
+                                                                <Button
+                                                                    className="w-full bg-[#664229] hover:bg-[#4d321f] text-white rounded-lg font-bold text-xs py-5 shadow-lg shadow-[#664229]/20 transition-all flex items-center justify-center gap-2 group"
+                                                                    onClick={() => handlePayment(invoice.id)}
+                                                                    disabled={loadingInvoiceId === invoice.id}
+                                                                >
+                                                                    {loadingInvoiceId === invoice.id ? (
+                                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                                    ) : (
+                                                                        <>
+                                                                            <CreditCard className="h-4 w-4" />
+                                                                            BAYAR SEKARANG
+                                                                            <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                                                                        </>
+                                                                    )}
+                                                                </Button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <Card className="border-none shadow-sm ring-1 ring-slate-100 bg-white rounded-2xl overflow-hidden">
+                            <CardContent className="flex flex-col items-center justify-center py-20 text-center">
+                                <div className="h-20 w-20 bg-slate-50 flex items-center justify-center rounded-full mb-6 text-slate-200">
+                                    <Receipt size={40} />
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-800 mb-2 whitespace-nowrap uppercase tracking-tighter">Aktivitas Tagihan Nihil</h3>
+                                <p className="text-sm text-slate-500 max-w-xs mx-auto">
+                                    Seluruh catatan tagihan akan otomatis muncul di sini setelah divalidasi oleh sistem administrasi.
+                                </p>
+                            </CardContent>
+                        </Card>
+                    )}
+                </div>
             </div>
 
             <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100 mb-4">
-                            <CheckCircle className="h-6 w-6 text-green-600" />
+                <DialogContent className="sm:max-w-md border-none shadow-2xl rounded-2xl p-0 overflow-hidden">
+                    <div className="bg-emerald-500 p-8 flex flex-col items-center justify-center text-white">
+                        <div className="h-16 w-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center mb-4">
+                            <CheckCircle className="h-8 w-8 text-white" />
                         </div>
-                        <DialogTitle className="text-center text-xl">Pembayaran Berhasil!</DialogTitle>
-                        <DialogDescription className="text-center pt-2">
-                            Terima kasih! Pembayaran tagihan Anda telah kami terima dan akan segera diproses.
-                            Status tagihan Anda akan diperbarui dalam beberapa saat.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter className="sm:justify-center">
+                        <h2 className="text-2xl font-bold tracking-tight">Pembayaran Sukses</h2>
+                    </div>
+                    <div className="p-8 text-center space-y-6">
+                        <p className="text-slate-500 font-medium leading-relaxed">
+                            Terima kasih. Dana Anda telah kami terima melalui saluran pembayaran resmi.
+                            Status tagihan akan diperbarui secara otomatis di sistem kami dalam waktu dekat.
+                        </p>
                         <Button
                             type="button"
-                            className="bg-[#664229] hover:bg-[#4d321f] px-8"
+                            className="w-full bg-[#664229] hover:bg-[#4d321f] text-white font-bold py-6 rounded-xl shadow-lg shadow-[#664229]/20"
                             onClick={() => setShowSuccessDialog(false)}
                         >
-                            Tutup
+                            KEMBALI KE PENAGIHAN
                         </Button>
-                    </DialogFooter>
+                    </div>
                 </DialogContent>
             </Dialog>
         </AppLayout>

@@ -38,6 +38,7 @@ export default function Index({ kos, pemilik, userRole }: Props) {
         address: '',
         description: '',
         image: null as File | null,
+        gender_type: 'campuran',
     });
 
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -48,6 +49,7 @@ export default function Index({ kos, pemilik, userRole }: Props) {
         address: '',
         description: '',
         image: null as File | null,
+        gender_type: 'campuran',
         _method: 'PUT',
     });
 
@@ -73,6 +75,7 @@ export default function Index({ kos, pemilik, userRole }: Props) {
             address: item.address,
             description: item.description,
             image: null,
+            gender_type: item.gender_type,
             _method: 'PUT',
         });
     };
@@ -85,6 +88,7 @@ export default function Index({ kos, pemilik, userRole }: Props) {
             address: '',
             description: '',
             image: null,
+            gender_type: 'campuran',
             _method: 'PUT',
         });
     };
@@ -99,6 +103,7 @@ export default function Index({ kos, pemilik, userRole }: Props) {
                     address: '',
                     description: '',
                     image: null,
+                    gender_type: 'campuran',
                     _method: 'PUT',
                 });
             },
@@ -141,6 +146,15 @@ export default function Index({ kos, pemilik, userRole }: Props) {
             accessorKey: 'address',
             header: 'Alamat',
             cell: ({ row }) => <div className="max-w-[300px] truncate">{row.getValue('address')}</div>,
+        },
+        {
+            accessorKey: 'gender_type',
+            header: 'Tipe Kos',
+            cell: ({ row }) => (
+                <div className="capitalize">
+                    {row.getValue('gender_type')}
+                </div>
+            ),
         },
         {
             id: 'actions',
@@ -252,6 +266,20 @@ export default function Index({ kos, pemilik, userRole }: Props) {
                                 {errors.description && <p className="text-sm text-red-600">{errors.description}</p>}
                             </div>
                             <div>
+                                <Label htmlFor="gender_type">Tipe Kos</Label>
+                                <Select value={data.gender_type} onValueChange={(value) => setData('gender_type', value as any)}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Pilih Tipe Kos" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="putra">Putra</SelectItem>
+                                        <SelectItem value="putri">Putri</SelectItem>
+                                        <SelectItem value="campuran">Campuran (Putra & Putri)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                {errors.gender_type && <p className="text-sm text-red-600">{errors.gender_type}</p>}
+                            </div>
+                            <div>
                                 <Label htmlFor="image">Gambar Thumbnail</Label>
                                 <Input
                                     id="image"
@@ -324,6 +352,19 @@ export default function Index({ kos, pemilik, userRole }: Props) {
                                     placeholder="Informasi detail kos"
                                     rows={5}
                                 />
+                            </div>
+                            <div>
+                                <Label htmlFor="edit-gender_type">Tipe Kos</Label>
+                                <Select value={editData.gender_type} onValueChange={(value) => setEditData({ ...editData, gender_type: value as any })}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Pilih Tipe Kos" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="putra">Putra</SelectItem>
+                                        <SelectItem value="putri">Putri</SelectItem>
+                                        <SelectItem value="campuran">Campuran (Putra & Putri)</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <div>
                                 <Label htmlFor="edit-image">Gambar Thumbnail (Opsional)</Label>

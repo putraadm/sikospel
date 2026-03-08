@@ -15,28 +15,35 @@ class TypeKamarSeeder extends Seeder
         $types = [
             [
                 'nama' => 'Standard',
-                'harga' => 50000,
-                'deskripsi' => 'Kamar standar dengan fasilitas dasar.',
+                'harga' => 800000,
+                'deskripsi' => 'Kamar standar dengan fasilitas dasar meliputi tempat tidur, lemari, dan meja belajar.',
+                'facilities' => ['Tempat Tidur', 'Lemari', 'Meja Belajar'],
             ],
             [
                 'nama' => 'Deluxe',
-                'harga' => 80000,
-                'deskripsi' => 'Kamar deluxe dengan AC dan kamar mandi dalam.',
+                'harga' => 1500000,
+                'deskripsi' => 'Kamar deluxe dengan AC, kamar mandi dalam, dan Wi-Fi.',
+                'facilities' => ['AC', 'Kamar Mandi Dalam', 'Tempat Tidur', 'Lemari', 'Meja Belajar', 'Wi-Fi'],
             ],
             [
                 'nama' => 'VIP',
-                'harga' => 120000,
-                'deskripsi' => 'Kamar VIP dengan fasilitas lengkap dan balkon.',
+                'harga' => 2500000,
+                'deskripsi' => 'Kamar VIP dengan fasilitas lengkap, TV, kulkas, dan balkon.',
+                'facilities' => ['AC', 'Kamar Mandi Dalam', 'Tempat Tidur', 'Lemari', 'Meja Belajar', 'Wi-Fi', 'TV', 'Kulkas', 'Balkon'],
             ],
             [
                 'nama' => 'Suite',
-                'harga' => 150000,
+                'harga' => 3500000,
                 'deskripsi' => 'Kamar suite dengan ruang tamu kecil dan fasilitas premium.',
+                'facilities' => ['AC', 'Kamar Mandi Dalam', 'Tempat Tidur King', 'Lemari Besar', 'Meja Belajar', 'Wi-Fi', 'Smart TV', 'Kulkas Duo', 'Sofa', 'Water Heater'],
             ],
         ];
 
         foreach ($types as $type) {
-            TypeKamar::create($type);
+            TypeKamar::firstOrCreate(
+                ['nama' => $type['nama']],
+                $type
+            );
         }
     }
 }

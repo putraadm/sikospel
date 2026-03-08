@@ -16,6 +16,7 @@ class Kos extends Model
         'address',
         'image',
         'description',
+        'gender_type',
     ];
 
     public function owner()

@@ -85,17 +85,28 @@ class FinancialReportController extends Controller
     {
         $payments = $this->getQuery($request)->get();
         $total = $payments->sum('amount_paid');
-        $bulan = $request->bulan ? Carbon::create()->month($request->bulan)->translatedFormat('F') : 'Semua';
-        $tahun = $request->tahun ?? 'Semua';
+        $bulanStr = 'Semua';
+        if ($request->filled('bulan') && $request->bulan !== 'all') {
+            $bulanStr = Carbon::create()->month($request->bulan)->translatedFormat('F');
+        }
+        $tahunStr = $request->filled('tahun') && $request->tahun !== 'all' ? $request->tahun : 'Semua';
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.financial-report', [
             'payments' => $payments,
             'total' => $total,
-            'bulan_name' => $bulan,
-            'tahun' => $tahun,
+            'bulan_name' => $bulanStr,
+            'tahun' => $tahunStr,
+            'filtered_kos' => $request->filled('kos_id') && $request->kos_id !== 'all' ? Kos::find($request->kos_id)->name : 'Semua Kos',
+            'user' => auth()->user(),
         ]);
 
-        return $pdf->download('Laporan_Keuangan_SIKOSPEL_' . now()->format('YmdHis') . '.pdf');
+        $filename = 'Laporan_Keuangan_SIKOSPEL_' . now()->format('YmdHis') . '.pdf';
+
+        if ($request->has('preview')) {
+            return $pdf->stream($filename);
+        }
+
+        return $pdf->download($filename);
     }
 
     public function exportExcel(Request $request)
@@ -112,18 +123,30 @@ class FinancialReportController extends Controller
         $user = auth()->user();
         $isPemilik = $user->role->name === 'pemilik';
 
-        $query = Payment::select('payments.*')
-            ->with([
-                'invoice.tenancy.penghuni',
-                'invoice.tenancy.room.kos',
-                'invoice.tenancy.room.typeKamar'
-            ])
+        $query = Payment::select(
+                'payments.id',
+                'payments.invoice_id',
+                'payments.amount_paid',
+                'payments.method',
+                'payments.status',
+                'payments.payment_date',
+                'payments.created_at',
+                'payments.updated_at',
+                'invoices.billing_period',
+                'invoices.status as invoice_status',
+                'penyewaan.id as tenancy_id',
+                'rooms.room_number',
+                'rooms.type_kamar_id',
+                'type_kamars.nama as type_kamar_nama',
+                'penghuni.name as penghuni_name',
+                'kos.name as kos_name'
+            )
             ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
             ->join('penyewaan', 'invoices.tenancy_id', '=', 'penyewaan.id')
             ->join('penghuni', 'penyewaan.penghuni_id', '=', 'penghuni.user_id')
             ->join('rooms', 'penyewaan.room_id', '=', 'rooms.id')
             ->join('kos', 'rooms.kos_id', '=', 'kos.id')
-            ->join('type_kamars', 'rooms.type_kamar_id', '=', 'type_kamars.id')
+            ->leftJoin('type_kamars', 'rooms.type_kamar_id', '=', 'type_kamars.id')
             ->where('payments.status', 'sukses')
             ->where('invoices.status', 'lunas');
 

@@ -25,7 +25,7 @@ class AdminFeedbackController extends Controller
                 $kosIds = Kos::where('owner_id', $pemilik->user_id)->pluck('id');
                 $roomIds = Room::whereIn('kos_id', $kosIds)->pluck('id');
                 $invoiceIds = Invoice::whereIn('tenancy_id', function($q) use ($roomIds) {
-                    $q->select('id')->from('penyewaans')->whereIn('room_id', $roomIds);
+                    $q->select('id')->from('penyewaan')->whereIn('room_id', $roomIds);
                 })->pluck('id');
                 
                 $query->whereIn('invoice_id', $invoiceIds);

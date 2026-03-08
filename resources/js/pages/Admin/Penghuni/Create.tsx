@@ -1,5 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Eye, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -62,6 +63,29 @@ export default function Create({ rooms, typeKamars, kos }: Props) {
         type_kamar_id: '',
         room_id: '',
     });
+
+    const [kkPreview, setKkPreview] = useState<string | null>(null);
+    const [ktpPreview, setKtpPreview] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (data.file_path_kk && data.file_path_kk.type.startsWith('image/')) {
+            const url = URL.createObjectURL(data.file_path_kk);
+            setKkPreview(url);
+            return () => URL.revokeObjectURL(url);
+        } else {
+            setKkPreview(null);
+        }
+    }, [data.file_path_kk]);
+
+    useEffect(() => {
+        if (data.file_path_ktp && data.file_path_ktp.type.startsWith('image/')) {
+            const url = URL.createObjectURL(data.file_path_ktp);
+            setKtpPreview(url);
+            return () => URL.revokeObjectURL(url);
+        } else {
+            setKtpPreview(null);
+        }
+    }, [data.file_path_ktp]);
 
     const filteredRooms = rooms.filter((room: Room) =>
         (!data.kos_id || room.kos_id.toString() === data.kos_id) &&
@@ -245,6 +269,17 @@ export default function Create({ rooms, typeKamars, kos }: Props) {
                                     onChange={(e) => setData('file_path_kk', e.target.files ? e.target.files[0] : null)}
                                     accept=".pdf,.jpg,.jpeg,.png"
                                 />
+                                {kkPreview && (
+                                    <div className="relative mt-2 rounded-lg border overflow-hidden bg-muted/20 animate-in fade-in zoom-in duration-300">
+                                        <div className="p-1 bg-white/80 backdrop-blur-sm border-b flex items-center justify-between px-2 text-[10px] font-medium">
+                                            <span className="flex items-center gap-1"><Eye className="h-3 w-3" /> Preview KK</span>
+                                            <button type="button" onClick={() => setData('file_path_kk', null)} className="hover:text-red-500 transition-colors">
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                        </div>
+                                        <img src={kkPreview} alt="KK Preview" className="max-h-48 w-full object-contain bg-black/5" />
+                                    </div>
+                                )}
                                 {errors.file_path_kk && <p className="text-xs text-red-600">{errors.file_path_kk}</p>}
                             </div>
 
@@ -256,6 +291,17 @@ export default function Create({ rooms, typeKamars, kos }: Props) {
                                     onChange={(e) => setData('file_path_ktp', e.target.files ? e.target.files[0] : null)}
                                     accept=".pdf,.jpg,.jpeg,.png"
                                 />
+                                {ktpPreview && (
+                                    <div className="relative mt-2 rounded-lg border overflow-hidden bg-muted/20 animate-in fade-in zoom-in duration-300">
+                                        <div className="p-1 bg-white/80 backdrop-blur-sm border-b flex items-center justify-between px-2 text-[10px] font-medium">
+                                            <span className="flex items-center gap-1"><Eye className="h-3 w-3" /> Preview KTP</span>
+                                            <button type="button" onClick={() => setData('file_path_ktp', null)} className="hover:text-red-500 transition-colors">
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                        </div>
+                                        <img src={ktpPreview} alt="KTP Preview" className="max-h-48 w-full object-contain bg-black/5" />
+                                    </div>
+                                )}
                                 {errors.file_path_ktp && <p className="text-xs text-red-600">{errors.file_path_ktp}</p>}
                             </div>
                         </div>

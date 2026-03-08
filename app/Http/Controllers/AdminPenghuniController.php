@@ -18,43 +18,99 @@ use App\Jobs\SyncMutasiPelaporanJob;
 
 class AdminPenghuniController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $penghuni = Penghuni::with(['user', 'currentRoom.typeKamar', 'currentRoom.kos'])->get();
-        $rooms = Room::with(['typeKamar', 'kos'])->get();
-        $typeKamars = TypeKamar::all();
-        $kos = Kos::all();
+        $user = auth()->user();
+        $queryPenghuni = Penghuni::with(['user', 'currentRoom.typeKamar', 'currentRoom.kos']);
+        $queryRooms = \App\Models\Room::with(['typeKamar', 'kos']);
+        $queryTypeKamars = \App\Models\TypeKamar::query();
+        $queryKos = \App\Models\Kos::query();
+
+        if ($user->role->name === 'pemilik') {
+            $pemilik = \App\Models\Pemilik::where('user_id', $user->id)->first();
+            $kosIds = \App\Models\Kos::where('owner_id', $pemilik->user_id)->pluck('id');
+            
+            $queryPenghuni->whereHas('currentRoom', function($q) use ($kosIds) {
+                $q->whereIn('kos_id', $kosIds);
+            });
+            $queryRooms->whereIn('kos_id', $kosIds);
+            $queryKos->where('owner_id', $pemilik->user_id);
+            $queryTypeKamars->where('user_id', $user->id);
+        }
+
+        // Filtering
+        if ($request->kos_id) {
+            $queryPenghuni->whereHas('currentRoom', function($q) use ($request) {
+                $q->where('kos_id', $request->kos_id);
+            });
+        }
+
+        if ($request->status) {
+            $queryPenghuni->where('status_penghuni', $request->status);
+        }
+
+        $queryPenghuni->orderBy('created_at', 'desc');
+
         return Inertia::render('Admin/Penghuni/Index', [
-            'penghuni' => $penghuni,
-            'rooms' => $rooms,
-            'typeKamars' => $typeKamars,
-            'kos' => $kos,
+            'penghuni' => $queryPenghuni->get(),
+            'rooms' => $queryRooms->get(),
+            'typeKamars' => $queryTypeKamars->get(),
+            'kos' => $queryKos->get(),
+            'filters' => $request->only(['kos_id', 'status']),
         ]);
     }
 
     public function create()
     {
-        $rooms = Room::with(['typeKamar', 'kos'])->get();
-        $typeKamars = TypeKamar::all();
-        $kos = Kos::all();
+        $user = auth()->user();
+        $queryRooms = \App\Models\Room::with(['typeKamar', 'kos']);
+        $queryTypeKamars = \App\Models\TypeKamar::query();
+        $queryKos = \App\Models\Kos::query();
+
+        if ($user->role->name === 'pemilik') {
+            $pemilik = \App\Models\Pemilik::where('user_id', $user->id)->first();
+            $kosIds = \App\Models\Kos::where('owner_id', $pemilik->user_id)->pluck('id');
+            
+            $queryRooms->whereIn('kos_id', $kosIds);
+            $queryKos->where('owner_id', $pemilik->user_id);
+            $queryTypeKamars->where('user_id', $user->id);
+        }
+
         return Inertia::render('Admin/Penghuni/Create', [
-            'rooms' => $rooms,
-            'typeKamars' => $typeKamars,
-            'kos' => $kos,
+            'rooms' => $queryRooms->get(),
+            'typeKamars' => $queryTypeKamars->get(),
+            'kos' => $queryKos->get(),
         ]);
     }
 
     public function edit($id)
     {
+        $user = auth()->user();
         $penghuni = Penghuni::with(['user', 'currentRoom.typeKamar', 'currentRoom.kos'])->findOrFail($id);
-        $rooms = Room::with(['typeKamar', 'kos'])->get();
-        $typeKamars = TypeKamar::all();
-        $kos = Kos::all();
+        
+        $queryRooms = \App\Models\Room::with(['typeKamar', 'kos']);
+        $queryTypeKamars = \App\Models\TypeKamar::query();
+        $queryKos = \App\Models\Kos::query();
+
+        if ($user->role->name === 'pemilik') {
+            $pemilik = \App\Models\Pemilik::where('user_id', $user->id)->first();
+            $kosIds = \App\Models\Kos::where('owner_id', $pemilik->user_id)->pluck('id');
+            
+            // Security check
+            if ($penghuni->currentRoom && !in_array($penghuni->currentRoom->kos_id, $kosIds->toArray())) {
+                abort(403, 'Unauthorized access to this resident.');
+            }
+
+            $queryRooms->whereIn('kos_id', $kosIds);
+            $queryKos->where('owner_id', $pemilik->user_id);
+            $queryTypeKamars->where('user_id', $user->id);
+        }
+
         return Inertia::render('Admin/Penghuni/Edit', [
             'penghuni' => $penghuni,
-            'rooms' => $rooms,
-            'typeKamars' => $typeKamars,
-            'kos' => $kos,
+            'rooms' => $queryRooms->get(),
+            'typeKamars' => $queryTypeKamars->get(),
+            'kos' => $queryKos->get(),
         ]);
     }
 
@@ -107,29 +163,8 @@ class AdminPenghuniController extends Controller
                 if ($room) {
                     $room->update(['status' => 'ditempati']);
 
-                    // Create initial invoice
-                    $room->load('typeKamar');
-                    $dailyRate = $room->typeKamar ? $room->typeKamar->harga : 0;
-                    
-                    $startDate = $request->tanggal_daftar ?? now();
-                    $start = \Carbon\Carbon::parse($startDate);
-                    $period = $start->copy()->startOfMonth();
-
-                    $statusPenghuni = $penghuni->status_penghuni;
-                    if ($statusPenghuni === 'penghuni') {
-                        $amount = $dailyRate * 30;
-                    } else {
-                        $remainingDays = $start->daysInMonth - $start->day + 1;
-                        $amount = $dailyRate * $remainingDays;
-                    }
-                    
-                    Invoice::create([
-                        'tenancy_id' => $penyewaan->id,
-                        'amount' => $amount,
-                        'due_date' => $period->copy()->addDays(9),
-                        'billing_period' => $period,
-                        'status' => 'belum_dibayar',
-                    ]);
+                    // Initial invoice creation removed per user request.
+                    // Billing will be managed manually via the "Generate Tagihan" button.
                 }
 
                 $room = Room::find($request->room_id);

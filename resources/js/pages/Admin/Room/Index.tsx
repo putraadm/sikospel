@@ -1,6 +1,6 @@
 import { Head, useForm, router } from '@inertiajs/react';
-import { Plus, Trash2, Edit, MoreHorizontal } from 'lucide-react';
-import { useState } from 'react';
+import { Plus, Trash2, Edit, MoreHorizontal, Filter, X } from 'lucide-react';
+import { useState, useMemo } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,6 +49,21 @@ export default function Index({ rooms, kos, typeKamars }: Props) {
         status: '',
         _method: 'PUT',
     });
+
+    // Filter state
+    const [filterKos, setFilterKos] = useState<string>('all');
+    const [filterStatus, setFilterStatus] = useState<string>('all');
+
+    // Filtered rooms
+    const filteredRooms = useMemo(() => {
+        return rooms.filter((room) => {
+            const matchKos = filterKos === 'all' || room.kos_id.toString() === filterKos;
+            const matchStatus = filterStatus === 'all' || room.status === filterStatus;
+            return matchKos && matchStatus;
+        });
+    }, [rooms, filterKos, filterStatus]);
+
+    const hasActiveFilter = filterKos !== 'all' || filterStatus !== 'all';
 
     // Delete confirmation state
     const [confirmOpen, setConfirmOpen] = useState(false);
@@ -200,9 +215,71 @@ export default function Index({ rooms, kos, typeKamars }: Props) {
                 </div>
 
                 <div className="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
+                    {/* Filter Bar */}
+                    <div className="flex flex-wrap items-center gap-3 mb-4">
+                        <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+                            <Filter className="h-4 w-4" />
+                            Filter:
+                        </div>
+
+                        {/* Filter Jenis Kos */}
+                        <div className="w-48">
+                            <Select value={filterKos} onValueChange={setFilterKos}>
+                                <SelectTrigger className="h-9 text-sm">
+                                    <SelectValue placeholder="Semua Kos" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Semua Kos</SelectItem>
+                                    {kos.map((k) => (
+                                        <SelectItem key={k.id} value={k.id.toString()}>
+                                            {k.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* Filter Status */}
+                        <div className="w-40">
+                            <Select value={filterStatus} onValueChange={setFilterStatus}>
+                                <SelectTrigger className="h-9 text-sm">
+                                    <SelectValue placeholder="Semua Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Semua Status</SelectItem>
+                                    <SelectItem value="tersedia">Tersedia</SelectItem>
+                                    <SelectItem value="ditempati">Ditempati</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* Reset Filter */}
+                        {hasActiveFilter && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-9 gap-1.5 text-muted-foreground hover:text-foreground"
+                                onClick={() => {
+                                    setFilterKos('all');
+                                    setFilterStatus('all');
+                                }}
+                            >
+                                <X className="h-3.5 w-3.5" />
+                                Reset
+                            </Button>
+                        )}
+
+                        {/* Active filter summary */}
+                        {hasActiveFilter && (
+                            <span className="text-xs text-muted-foreground ml-auto">
+                                Menampilkan {filteredRooms.length} dari {rooms.length} kamar
+                            </span>
+                        )}
+                    </div>
+
                     <DataTable
                         columns={columns}
-                        data={rooms}
+                        data={filteredRooms}
                         headerAction={
                             <Button onClick={() => setShowCreateModal(true)} className="bg-primary hover:bg-primary/90 text-white">
                                 <Plus className="h-4 w-4" />
@@ -211,6 +288,7 @@ export default function Index({ rooms, kos, typeKamars }: Props) {
                         }
                     />
                 </div>
+
 
                 {/* Create Modal */}
                 <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
