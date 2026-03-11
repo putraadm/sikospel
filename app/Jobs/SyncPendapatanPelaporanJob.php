@@ -54,28 +54,38 @@ class SyncPendapatanPelaporanJob implements ShouldQueue
      */
     public function handle(): void
     {
-        try {
-            $response = Http::timeout(10)->withToken(env('API_PELAPORAN_TOKEN'))
-                ->post(env('API_PELAPORAN_URL') . '/sync-pendapatan', [
-                    'id_kos'             => $this->idKos,
-                    'id_pemilik'         => $this->idPemilik,
-                    'nama_kos'           => $this->namaKos,
-                    'nama_penghuni'      => $this->namaPenghuni,
-                    'nomor_kamar'        => $this->nomorKamar,
-                    'tipe_kamar'         => $this->tipeKamar,
-                    'periode_tagihan'    => $this->periodeTagihan,
-                    'metode_pembayaran'  => $this->metodePembayaran,
-                    'nominal'            => $this->nominal,
-                    'tanggal_pembayaran' => $this->tanggalPembayaran,
-                ]);
-
-            if ($response->successful() && $response->json('success') === true) {
-                Log::info('Berhasil sync pendapatan ke pelaporan untuk ' . $this->namaPenghuni);
-            } else {
-                Log::error('Gagal sync pendapatan ke pelaporan: ' . $response->json('message'));
+        $periodeTagihan = $this->periodeTagihan;
+        if ($periodeTagihan instanceof \Carbon\Carbon) {
+            $periodeTagihan = $periodeTagihan->format('Y-m-d');
+        } elseif (is_string($periodeTagihan) && str_contains($periodeTagihan, 'T')) {
+            try {
+                $periodeTagihan = \Carbon\Carbon::parse($periodeTagihan)->format('Y-m-d');
+            } catch (\Exception $e) {
+                // fall back to original if parsing fails
             }
-        } catch (\Exception $e) {
-            Log::error('Job API Sync Pendapatan gagal: ' . $e->getMessage());
+        }
+
+        $response = Http::timeout(30)->withToken(env('API_PELAPORAN_TOKEN'))
+            ->post(env('API_PELAPORAN_URL') . '/sync-pendapatan', [
+                'id_kos'             => $this->idKos,
+                'id_pemilik'         => $this->idPemilik,
+                'nama_kos'           => $this->namaKos,
+                'nama_penghuni'      => $this->namaPenghuni,
+                'nomor_kamar'        => $this->nomorKamar,
+                'tipe_kamar'         => $this->tipeKamar,
+                'periode_tagihan'    => $periodeTagihan,
+                'metode_pembayaran'  => $this->metodePembayaran,
+                'nominal'            => $this->nominal,
+                'tanggal_pembayaran' => $this->tanggalPembayaran,
+            ]);
+
+        if ($response->successful() && $response->json('success') === true) {
+            Log::info('Berhasil sync pendapatan ke pelaporan untuk ' . $this->namaPenghuni);
+        } else {
+            // Melemparkan exception agar Laravel tahu job ini gagal
+            $errorMessage = $response->json('message') ?? 'Unknown API Error';
+            Log::error('Gagal sync pendapatan ke pelaporan: ' . $errorMessage);
+            throw new \Exception('API Sync Failed: ' . $errorMessage);
         }
     }
 }

@@ -14,7 +14,7 @@ import {
 } from './ui/dropdown-menu';
 import { UserMenuContent } from './user-menu-content';
 import { useInitials } from '@/hooks/use-initials';
-import { ArrowUp, Facebook, Instagram, Twitter, Mail, MapPin, Phone, Search } from 'lucide-react';
+import { ArrowUp, Search } from 'lucide-react';
 
 interface Props {
     children: ReactNode;
@@ -82,6 +82,7 @@ export default function MainLayout({ children, breadcrumbs = [] }: Props) {
                                 </DropdownMenu>
                             ) : (
                                 <div className="flex items-center gap-4">
+
                                     <Link href="/login">
                                         <Button variant="ghost" className="h-11 px-6 rounded-2xl font-black text-sm text-neutral-600 hover:text-primary hover:bg-primary/5 transition-all tracking-tight">
                                             Masuk
@@ -118,82 +119,21 @@ export default function MainLayout({ children, breadcrumbs = [] }: Props) {
 
                 <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 relative z-10">
                     <div className="grid grid-cols-1 gap-16 md:grid-cols-2 lg:grid-cols-5">
-                        <div className="lg:col-span-2">
+                        <div className="lg:col-span-3">
                             <Link href="/" className="flex items-center gap-2 mb-8 group transition-transform hover:scale-[1.02] w-fit">
                                 <AppLogo />
                             </Link>
-                            <p className="max-w-sm text-lg font-medium leading-relaxed text-neutral-600 dark:text-neutral-400 mb-10">
+                            <p className="max-w-2xl text-lg font-medium leading-relaxed text-neutral-600 dark:text-neutral-400 mb-6">
                                 Merevolusi cara Anda menemukan dan mengelola hunian. SIKOSPEL menghadirkan kenyamanan dan transparansi dalam satu platform terpadu.
                             </p>
-                            <div className="flex items-center gap-4">
-                                {[
-                                    { icon: Instagram, href: '#', label: 'Instagram' },
-                                    { icon: Twitter, href: '#', label: 'Twitter' },
-                                    { icon: Facebook, href: '#', label: 'Facebook' },
-                                    { icon: Mail, href: '#', label: 'Email' }
-                                ].map((social, i) => (
-                                    <a
-                                        key={i}
-                                        href={social.href}
-                                        className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white border border-primary/10 text-primary/60 shadow-sm hover:bg-primary hover:text-white hover:border-primary hover:-translate-y-1 transition-all duration-300 dark:bg-neutral-900 dark:border-primary/20"
-                                        aria-label={social.label}
-                                    >
-                                        <social.icon className="size-5" strokeWidth={2.5} />
-                                    </a>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="space-y-8">
-                            <h4 className="text-sm font-black uppercase tracking-[0.2em] text-primary italic">Layanan</h4>
-                            <ul className="space-y-4">
-                                {['Cari Kos', 'Rekomendasi', 'Promo Spesial', 'Pusat Bantuan'].map((item, i) => (
-                                    <li key={i}>
-                                        <Link href="#" className="group flex items-center text-neutral-500 hover:text-primary transition-colors font-semibold">
-                                            <span className="h-px w-0 bg-primary group-hover:w-4 transition-all duration-300 mr-0 group-hover:mr-2"></span>
-                                            {item}
-                                        </Link>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-
-                        <div className="space-y-8">
-                            <h4 className="text-sm font-black uppercase tracking-[0.2em] text-primary italic">Perusahaan</h4>
-                            <ul className="space-y-4">
-                                {['Tentang Kami', 'Karir', 'Kontak Kami', 'Blog'].map((item, i) => (
-                                    <li key={i}>
-                                        <Link href="#" className="group flex items-center text-neutral-500 hover:text-primary transition-colors font-semibold">
-                                            <span className="h-px w-0 bg-primary group-hover:w-4 transition-all duration-300 mr-0 group-hover:mr-2"></span>
-                                            {item}
-                                        </Link>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-
-                        <div className="space-y-8">
-                            <h4 className="text-sm font-black uppercase tracking-[0.2em] text-primary italic">Kontak</h4>
-                            <ul className="space-y-6">
-                                <li className="flex items-start gap-4">
-                                    <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/5 text-primary">
-                                        <MapPin className="size-4" />
-                                    </div>
-                                    <p className="text-sm font-medium leading-relaxed text-neutral-500 dark:text-neutral-400">
-                                        Jl. Raya Properti No. 123, <br />Jakarta Selatan, 12345
-                                    </p>
-                                </li>
-                                <li className="flex items-center gap-4">
-                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/5 text-primary">
-                                        <Phone className="size-4" />
-                                    </div>
-                                    <p className="text-sm font-bold text-neutral-600 dark:text-neutral-300">
-                                        +62 21 1234 5678
-                                    </p>
-                                </li>
-                            </ul>
+                            <Link href="/pencarian-kos" className="text-sm font-bold text-primary hover:underline flex items-center gap-2">
+                                <Search className="size-4" />
+                                Cari Kos Sekarang
+                            </Link>
                         </div>
                     </div>
+
+
 
                     <div className="mt-20 pt-10 border-t border-primary/5 flex flex-col md:flex-row justify-between items-center gap-8 px-6 py-4 bg-white/40 dark:bg-neutral-900/40 rounded-3xl backdrop-blur-sm border border-primary/5">
                         <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">

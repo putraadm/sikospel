@@ -57,6 +57,7 @@ Route::get('pendaftaran-kos-{slug?}', [PublicPendaftaranKosController::class, 'c
 Route::post('pendaftaran-kos', [PublicPendaftaranKosController::class, 'store'])->name('public.pendaftaran-kos.store');
 Route::get('pendaftaran-kos/sukses/{id}', [PublicPendaftaranKosController::class, 'success'])->name('public.pendaftaran-kos.sukses');
 Route::get('kos/{slug}', [PublicKosController::class, 'show'])->name('public.kos.show');
+Route::get('pencarian-kos', [PublicKosController::class, 'index'])->name('public.kos.index');
 Route::get('tipe-kamar/{id}', [App\Http\Controllers\PublicTypeKamarController::class, 'show'])->name('public.type-kamar.show');
 
 Route::middleware(['auth', 'verified'])->group(function () {

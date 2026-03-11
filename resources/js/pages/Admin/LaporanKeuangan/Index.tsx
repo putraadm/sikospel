@@ -13,14 +13,14 @@ import { Pagination } from '@/components/ui/pagination';
 
 interface Payment {
     id: number;
-    payment_date: string;
-    amount_paid: string | number;
-    method: string;
-    billing_period: string;
-    room_number: string;
-    type_kamar_nama: string | null;
-    penghuni_name: string;
-    kos_name: string;
+    tanggal_pembayaran: string;
+    nominal: string | number;
+    metode_pembayaran: string;
+    periode_tagihan: string;
+    nomor_kamar: string;
+    tipe_kamar: string | null;
+    nama_penghuni: string;
+    nama_kos: string;
 }
 
 interface Props {
@@ -96,6 +96,29 @@ export default function Index({ payments, stats, filters, kosList, methods }: Pr
             currency: 'IDR',
             minimumFractionDigits: 0,
         }).format(Number(amount));
+    };
+
+    const safeFormatDate = (dateString: string | null) => {
+        if (!dateString) return '-';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return '-';
+        return new Intl.DateTimeFormat('id-ID', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        }).format(date);
+    };
+
+    const safeFormatBillingPeriod = (dateString: string | null) => {
+        if (!dateString) return '-';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return '-';
+        return new Intl.DateTimeFormat('id-ID', {
+            month: 'long',
+            year: 'numeric'
+        }).format(date);
     };
 
     const handleFilterChange = (key: string, value: any) => {
@@ -415,29 +438,29 @@ export default function Index({ payments, stats, filters, kosList, methods }: Pr
                                 payments.data.map((payment) => (
                                     <TableRow key={payment.id} className="border-[#664229]/5 hover:bg-[#664229]/5 transition-colors">
                                         <TableCell>
-                                            <div className="font-semibold text-slate-900">{payment.penghuni_name || 'N/A'}</div>
+                                            <div className="font-semibold text-slate-900">{payment.nama_penghuni || 'N/A'}</div>
                                         </TableCell>
                                         <TableCell className="text-sm">
-                                            {payment.kos_name || 'N/A'}
+                                            {payment.nama_kos || 'N/A'}
                                         </TableCell>
                                         <TableCell className="font-medium text-xs whitespace-nowrap">
-                                            {new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(payment.payment_date))}
+                                            {safeFormatDate(payment.tanggal_pembayaran)}
                                         </TableCell>
                                         <TableCell>
                                             <div className="text-xs">
-                                                <div className="font-medium text-[#664229]">{payment.type_kamar_nama || 'Tidak Diketahui'}</div>
-                                                <div className="text-muted-foreground">Kamar {payment.room_number || '-'}</div>
+                                                <div className="font-medium text-[#664229]">{payment.tipe_kamar || 'Tidak Diketahui'}</div>
+                                                <div className="text-muted-foreground">Kamar {payment.nomor_kamar || '-'}</div>
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-sm">
-                                            {payment.billing_period ? new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(new Date(payment.billing_period)) : '-'}
+                                            {safeFormatBillingPeriod(payment.periode_tagihan)}
                                         </TableCell>
                                         <TableCell>
-                                            <div className="font-bold text-[#664229]">{formatCurrency(payment.amount_paid)}</div>
+                                            <div className="font-bold text-[#664229]">{formatCurrency(payment.nominal)}</div>
                                         </TableCell>
                                         <TableCell>
                                             <Badge variant="outline" className="text-[10px] bg-white text-[#664229] border-[#664229]/30 capitalize">
-                                                {payment.method || 'Default'}
+                                                {payment.metode_pembayaran || 'Default'}
                                             </Badge>
                                         </TableCell>
                                     </TableRow>
