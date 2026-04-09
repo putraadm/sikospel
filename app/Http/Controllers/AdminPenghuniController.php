@@ -118,6 +118,8 @@ class AdminPenghuniController extends Controller
     {
         $request->validate([
             'username' => 'required|string|max:255|unique:users,username',
+            // 'nik' => 'required|string|size:16|unique:penghuni,nik',
+            'nik' => 'nullable|string|size:16',
             'name' => 'required|string|max:255',
             'no_wa' => 'nullable|string|max:20',
             'address' => 'nullable|string',
@@ -138,7 +140,7 @@ class AdminPenghuniController extends Controller
                 'role_id' => 4,
             ]);
 
-            $data = $request->only(['name', 'no_wa', 'address', 'religion', 'tanggal_daftar', 'status_penghuni']);
+            $data = $request->only(['nik', 'name', 'no_wa', 'address', 'religion', 'tanggal_daftar', 'status_penghuni']);
             $data['user_id'] = $user->id;
 
             if ($request->hasFile('file_path_kk')) {
@@ -174,6 +176,7 @@ class AdminPenghuniController extends Controller
 
                 SyncMutasiPelaporanJob::dispatch(
                     $penghuni->user_id,
+                    $penghuni->nik,
                     $penghuni->name,
                     $penghuni->no_wa,
                     $penghuni->religion,
@@ -198,6 +201,8 @@ class AdminPenghuniController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
+            // 'nik' => 'required|string|size:16|unique:penghuni,nik,' . $id . ',user_id',
+            'nik' => 'nullable|string|size:16',
             'name' => 'required|string|max:255',
             'no_wa' => 'nullable|string|max:20',
             'address' => 'nullable|string',
@@ -211,7 +216,7 @@ class AdminPenghuniController extends Controller
 
         return \DB::transaction(function () use ($request, $id) {
             $penghuni = Penghuni::findOrFail($id);
-            $data = $request->only(['name', 'no_wa', 'address', 'religion', 'tanggal_daftar', 'status_penghuni']);
+            $data = $request->only(['nik', 'name', 'no_wa', 'address', 'religion', 'tanggal_daftar', 'status_penghuni']);
 
             if ($request->hasFile('file_path_kk')) {
                 $data['file_path_kk'] = $request->file('file_path_kk')->store('kk', 'public');
@@ -222,6 +227,8 @@ class AdminPenghuniController extends Controller
             }
 
             $penghuni->update($data);
+
+            $mutasiDispatched = false;
 
             if ($request->room_id) {
                 $currentPenyewaan = $penghuni->currentPenyewaan;
@@ -256,6 +263,7 @@ class AdminPenghuniController extends Controller
                         if ($oldKosId) {
                             SyncMutasiPelaporanJob::dispatch(
                                 $penghuni->user_id,
+                                $penghuni->nik,
                                 $penghuni->name,
                                 $penghuni->no_wa,
                                 $penghuni->religion,
@@ -270,6 +278,7 @@ class AdminPenghuniController extends Controller
                         // B. Laporkan MASUK ke Kos Baru
                         \App\Jobs\SyncMutasiPelaporanJob::dispatch(
                             $penghuni->user_id,
+                            $penghuni->nik,
                             $penghuni->name,
                             $penghuni->no_wa,
                             $penghuni->religion,
@@ -279,7 +288,34 @@ class AdminPenghuniController extends Controller
                             'masuk',
                             $request->tanggal_daftar ?? now()->format('Y-m-d')
                         );
+                        $mutasiDispatched = true;
                     }
+                }
+            }
+
+            if (!$mutasiDispatched) {
+                $currentPenyewaan = $penghuni->currentPenyewaan;
+                $currentKosId = null;
+                if ($currentPenyewaan) {
+                    $room = Room::find($currentPenyewaan->room_id);
+                    if ($room) {
+                        $currentKosId = $room->kos_id;
+                    }
+                }
+                
+                if ($currentKosId) {
+                    \App\Jobs\SyncMutasiPelaporanJob::dispatch(
+                        $penghuni->user_id,
+                        $penghuni->nik,
+                        $penghuni->name,
+                        $penghuni->no_wa,
+                        $penghuni->religion,
+                        $penghuni->file_path_ktp,
+                        $penghuni->file_path_kk,
+                        $currentKosId,
+                        'update',
+                        $request->tanggal_daftar ?? now()->format('Y-m-d')
+                    );
                 }
             }
 
@@ -307,6 +343,7 @@ class AdminPenghuniController extends Controller
             if ($idKosKeluar) {
                 SyncMutasiPelaporanJob::dispatch(
                     $penghuni->user_id,
+                    $penghuni->nik,
                     $penghuni->name,
                     $penghuni->no_wa,
                     $penghuni->religion,

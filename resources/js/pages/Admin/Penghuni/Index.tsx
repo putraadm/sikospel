@@ -32,6 +32,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 interface Penghuni {
     user_id: number;
+    nik: string | null;
     name: string;
     no_wa: string | null;
     address: string | null;
@@ -318,6 +319,10 @@ export default function Index({ penghuni, kos, filters, flash }: Props) {
                         {selectedPenghuni && (
                             <div className="grid gap-6 py-4">
                                 <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <h4 className="text-sm font-medium text-muted-foreground">NIK</h4>
+                                        <p className="text-base font-semibold">{selectedPenghuni.nik || '-'}</p>
+                                    </div>
                                     <div className="space-y-1">
                                         <h4 className="text-sm font-medium text-muted-foreground">Nama Lengkap</h4>
                                         <p className="text-base font-semibold">{selectedPenghuni.name}</p>

@@ -51,6 +51,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function Create({ rooms, typeKamars, kos }: Props) {
     const { data, setData, post, processing, errors } = useForm({
         username: '',
+        nik: '',
         name: '',
         no_wa: '',
         address: '',
@@ -130,6 +131,17 @@ export default function Create({ rooms, typeKamars, kos }: Props) {
                                 />
                                 {errors.username && <p className="text-xs text-red-600">{errors.username}</p>}
                                 <p className="text-[10px] text-muted-foreground">Username ini akan digunakan penghuni untuk login ke aplikasi.</p>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="nik">NIK</Label>
+                                <Input
+                                    id="nik"
+                                    value={data.nik}
+                                    onChange={(e) => setData('nik', e.target.value)}
+                                    placeholder="Nomor Induk Kependudukan (16 Digit)"
+                                />
+                                {errors.nik && <p className="text-xs text-red-600">{errors.nik}</p>}
                             </div>
 
                             <div className="space-y-2">

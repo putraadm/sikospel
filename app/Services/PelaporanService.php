@@ -13,6 +13,7 @@ class PelaporanService{
 
             $data = [
                 'id_penghuni' => $penghuni->id,
+                'nik' => $penghuni->nik,
                 'nama' => $penghuni->nama,
                 'no_wa' => $penghuni->no_wa,
                 'agama' => $penghuni->agama,

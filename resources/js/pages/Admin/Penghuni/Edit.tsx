@@ -29,6 +29,7 @@ interface TypeKamar {
 
 interface Penghuni {
     user_id: number;
+    nik: string | null;
     name: string;
     no_wa: string | null;
     address: string | null;
@@ -72,6 +73,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function Edit({ penghuni, rooms, typeKamars, kos }: Props) {
     const { data, setData, post, processing, errors } = useForm({
         _method: 'PUT',
+        nik: penghuni.nik || '',
         name: penghuni.name,
         no_wa: penghuni.no_wa || '',
         address: penghuni.address || '',
@@ -149,6 +151,17 @@ export default function Edit({ penghuni, rooms, typeKamars, kos }: Props) {
                                 <Label>User Akun (Email)</Label>
                                 <Input value={penghuni.user.email} disabled className="bg-muted" />
                                 <p className="text-[10px] italic">Email akun tidak dapat diubah.</p>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="nik">NIK</Label>
+                                <Input
+                                    id="nik"
+                                    value={data.nik}
+                                    onChange={(e) => setData('nik', e.target.value)}
+                                    placeholder="Nomor Induk Kependudukan (16 Digit)"
+                                />
+                                {errors.nik && <p className="text-xs text-red-600">{errors.nik}</p>}
                             </div>
 
                             <div className="space-y-2">

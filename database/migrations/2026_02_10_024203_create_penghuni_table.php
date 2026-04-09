@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('penghuni', function (Blueprint $table) {
             $table->unsignedBigInteger('user_id')->primary();
+            $table->char('nik', 16)->unique();
             $table->string('name');
             $table->string('no_wa', 20)->nullable();
             $table->text('address')->nullable();

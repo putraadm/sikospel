@@ -12,6 +12,7 @@ class SyncMutasiPelaporanJob implements ShouldQueue
     use Queueable;
 
     protected $idPenghuni;
+    protected $nik;
     protected $nama;
     protected $noWa;
     protected $agama;
@@ -26,6 +27,7 @@ class SyncMutasiPelaporanJob implements ShouldQueue
      */
     public function __construct(
         $idPenghuni,
+        $nik,
         $nama,
         $noWa,
         $agama,
@@ -36,6 +38,7 @@ class SyncMutasiPelaporanJob implements ShouldQueue
         $tanggalMutasi
     ) {
         $this->idPenghuni = $idPenghuni;
+        $this->nik = $nik;
         $this->nama = $nama;
         $this->noWa = $noWa;
         $this->agama = $agama;
@@ -56,6 +59,7 @@ class SyncMutasiPelaporanJob implements ShouldQueue
 
             $data = [
                 'id_penghuni'    => $this->idPenghuni,
+                'nik'            => $this->nik,
                 'nama'           => $this->nama,
                 'no_wa'          => $this->noWa,
                 'agama'          => $this->agama,
