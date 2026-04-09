@@ -43,6 +43,8 @@ interface InvoiceData {
     payments?: {
         id: number;
         status: string;
+        feedback?: string;
+        admin_response?: string;
     }[];
 }
 
@@ -307,14 +309,39 @@ export default function Tagihan({ invoices, midtrans_client_key, midtrans_is_pro
 
                                                     <div className="w-full space-y-3">
                                                         {invoice.status === 'lunas' && invoice.payments && invoice.payments.length > 0 && (
-                                                            <Button
-                                                                variant="outline"
-                                                                className="w-full border-[#664229] text-[#664229] hover:bg-[#664229] hover:text-white rounded-lg font-bold text-xs py-5 transition-all"
-                                                                onClick={() => handlePrintReceipt(invoice.payments![0].id)}
-                                                            >
-                                                                <FileText className="h-4 w-4 mr-2" />
-                                                                CETAK BUKTI BAYAR
-                                                            </Button>
+                                                            <div className="space-y-4 w-full">
+                                                                <Button
+                                                                    variant="outline"
+                                                                    className="w-full border-[#664229] text-[#664229] hover:bg-[#664229] hover:text-white rounded-lg font-bold text-xs py-5 transition-all"
+                                                                    onClick={() => handlePrintReceipt(invoice.payments![0].id)}
+                                                                >
+                                                                    <FileText className="h-4 w-4 mr-2" />
+                                                                    CETAK BUKTI BAYAR
+                                                                </Button>
+
+                                                                {invoice.payments[0].feedback && (
+                                                                    <div className="text-left bg-white p-4 rounded-lg border border-slate-200 mt-4 space-y-3">
+                                                                        <div>
+                                                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">
+                                                                                Saran Anda
+                                                                            </p>
+                                                                            <p className="text-sm text-slate-700 italic">
+                                                                                "{invoice.payments[0].feedback}"
+                                                                            </p>
+                                                                        </div>
+                                                                        {invoice.payments[0].admin_response && (
+                                                                            <div className="pt-3 border-t border-slate-100">
+                                                                                <p className="text-[10px] font-black text-[#664229] uppercase tracking-widest leading-none mb-1 flex items-center gap-1">
+                                                                                    <ShieldCheck size={12} /> Tanggapan Admin
+                                                                                </p>
+                                                                                <p className="text-sm text-slate-700 bg-[#664229]/5 p-2 rounded-md">
+                                                                                    {invoice.payments[0].admin_response}
+                                                                                </p>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         )}
                                                         {(invoice.status === 'belum_dibayar' || invoice.status === 'terlambat') && (
                                                             <div className="space-y-4 w-full">
