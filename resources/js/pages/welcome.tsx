@@ -121,7 +121,7 @@ export default function Welcome({
                             </p>
 
                             <div className="hero-buttons flex flex-col sm:flex-row items-center justify-center gap-6">
-                                <Link href="#">
+                                <Link href="/pencarian-kos">
                                     <Button size="lg" className="h-16 px-12 text-lg bg-primary hover:bg-primary/95 text-white rounded-2xl shadow-[0_15px_50px_-10px_rgba(102,66,41,0.5)] transition-all hover:-translate-y-1 hover:shadow-primary/40 group">
                                         Cari Kos Sekarang
                                         <ArrowRight className="ml-2 size-6 transition-transform group-hover:translate-x-1" />
@@ -215,7 +215,7 @@ export default function Welcome({
                         </div>
                         <div className="flex flex-col gap-4">
                             <p className="text-lg text-[#3e2717]/60 dark:text-white/60 leading-relaxed max-w-xs font-medium">Dekat kampus, aman, dan telah terverifikasi oleh tim kurasi kami.</p>
-                            <Link href="#" className="inline-flex h-14 items-center gap-4 px-8 rounded-2xl bg-[#1e110a] text-[#f8f1ea] font-bold hover:bg-[#8b5e3c] transition-all duration-500 shadow-2xl group w-fit">
+                            <Link href="/pencarian-kos" className="inline-flex h-14 items-center gap-4 px-8 rounded-2xl bg-[#1e110a] text-[#f8f1ea] font-bold hover:bg-[#8b5e3c] transition-all duration-500 shadow-2xl group w-fit">
                                 <span>Eksplorasi Semua</span>
                                 <ArrowRight className="size-5 group-hover:translate-x-1 transition-transform" />
                             </Link>
@@ -238,8 +238,8 @@ export default function Welcome({
                                             {/* Badges Overlay */}
                                             <div className="absolute top-4 left-4 flex flex-wrap gap-2">
                                                 <Badge className={`border-none py-1.5 px-3 text-[10px] font-bold rounded-lg shadow-md ${k.gender_type === 'putra' ? 'bg-blue-600 text-white' :
-                                                        k.gender_type === 'putri' ? 'bg-pink-600 text-white' :
-                                                            'bg-green-600 text-white'
+                                                    k.gender_type === 'putri' ? 'bg-pink-600 text-white' :
+                                                        'bg-green-600 text-white'
                                                     }`}>
                                                     {k.gender_type === 'campuran' ? 'Campur' : k.gender_type.charAt(0).toUpperCase() + k.gender_type.slice(1)}
                                                 </Badge>

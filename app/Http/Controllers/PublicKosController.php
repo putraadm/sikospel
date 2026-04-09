@@ -8,6 +8,32 @@ use Inertia\Inertia;
 
 class PublicKosController extends Controller
 {
+    public function index(Request $request)
+    {
+        $search = $request->query('search');
+        
+        $query = Kos::with(['rooms' => function($q) {
+            $q->select('id', 'kos_id', 'room_number', 'type_kamar_id', 'status')
+              ->with('typeKamar');
+        }]);
+
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('address', 'like', "%{$search}%");
+            });
+        }
+
+        $kos = $query->get();
+
+        return Inertia::render('Public/Kos/Index', [
+            'kos' => $kos,
+            'filters' => [
+                'search' => $search
+            ]
+        ]);
+    }
+
     public function show($slug)
     {
         $kos = Kos::with(['owner.user', 'rooms.typeKamar.images'])
