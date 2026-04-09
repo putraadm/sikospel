@@ -38,4 +38,31 @@ class AdminFeedbackController extends Controller
             'feedbacks' => $feedbacks
         ]);
     }
+
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'admin_response' => 'required|string',
+        ]);
+
+        $payment = Payment::findOrFail($id);
+        
+        // Ensure user has access to this payment's feedback
+        $user = auth()->user();
+        if ($user->role->name === 'pemilik') {
+            $pemilik = Pemilik::where('user_id', $user->id)->first();
+            if ($pemilik) {
+                // Verify owner
+                $invoice = Invoice::with('tenancy.room.kos')->find($payment->invoice_id);
+                if ($invoice && $invoice->tenancy->room->kos->owner_id !== $pemilik->user_id) {
+                    abort(403);
+                }
+            }
+        }
+
+        $payment->admin_response = $request->admin_response;
+        $payment->save();
+
+        return redirect()->back()->with('success', 'Tanggapan berhasil disimpan.');
+    }
 }

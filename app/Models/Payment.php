@@ -16,6 +16,7 @@ class Payment extends Model
         'status',
         'bukti_pembayaran',
         'feedback',
+        'admin_response',
     ];
 
     protected $casts = [
