@@ -164,9 +164,6 @@ class AdminPenghuniController extends Controller
                 $room = Room::find($request->room_id);
                 if ($room) {
                     $room->update(['status' => 'ditempati']);
-
-                    // Initial invoice creation removed per user request.
-                    // Billing will be managed manually via the "Generate Tagihan" button.
                 }
 
                 $room = Room::find($request->room_id);
@@ -294,29 +291,16 @@ class AdminPenghuniController extends Controller
             }
 
             if (!$mutasiDispatched) {
-                $currentPenyewaan = $penghuni->currentPenyewaan;
-                $currentKosId = null;
-                if ($currentPenyewaan) {
-                    $room = Room::find($currentPenyewaan->room_id);
-                    if ($room) {
-                        $currentKosId = $room->kos_id;
-                    }
-                }
-                
-                if ($currentKosId) {
-                    \App\Jobs\SyncMutasiPelaporanJob::dispatch(
-                        $penghuni->user_id,
-                        $penghuni->nik,
-                        $penghuni->name,
-                        $penghuni->no_wa,
-                        $penghuni->religion,
-                        $penghuni->file_path_ktp,
-                        $penghuni->file_path_kk,
-                        $currentKosId,
-                        'update',
-                        $request->tanggal_daftar ?? now()->format('Y-m-d')
-                    );
-                }
+                // Gunakan SyncPenghuniPelaporanJob khusus untuk update profil murni tanpa log mutasi
+                \App\Jobs\SyncPenghuniPelaporanJob::dispatch(
+                    $penghuni->user_id,
+                    $penghuni->nik,
+                    $penghuni->name,
+                    $penghuni->no_wa,
+                    $penghuni->religion,
+                    $penghuni->file_path_ktp,
+                    $penghuni->file_path_kk
+                );
             }
 
             return redirect()->route('penghuni.index')->with('success', 'Penghuni updated successfully.');
