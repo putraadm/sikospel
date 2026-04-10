@@ -6,6 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DataTable } from '@/components/ui/data-table';
 import { ColumnDef } from '@tanstack/react-table';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { useForm } from '@inertiajs/react';
+import { useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -15,6 +20,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 interface Feedback {
     id: number;
     feedback: string;
+    admin_response: string | null;
     payment_date: string;
     amount_paid: string;
     invoice: {
@@ -37,6 +43,24 @@ interface Props {
 }
 
 export default function Index({ feedbacks }: Props) {
+    const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
+    const { data, setData, patch, processing, reset, errors } = useForm({
+        admin_response: '',
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedFeedback) return;
+
+        patch(`/admin/feedback/${selectedFeedback.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setSelectedFeedback(null);
+                reset();
+            },
+        });
+    };
+
     const columns: ColumnDef<Feedback>[] = [
         {
             accessorKey: 'payment_date',
@@ -79,15 +103,30 @@ export default function Index({ feedbacks }: Props) {
                 </div>
             ),
         },
-        // {
-        //     id: 'status',
-        //     header: 'Status',
-        //     cell: () => (
-        //         <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
-        //             Selesai
-        //         </Badge>
-        //     ),
-        // }
+        {
+            id: 'tanggapan',
+            header: 'Tanggapan Admin',
+            cell: ({ row }) => {
+                const item = row.original;
+                return item.admin_response ? (
+                    <div className="max-w-md bg-[#664229]/5 p-3 rounded-lg border border-[#664229]/20 text-sm text-gray-800 dark:text-gray-200">
+                        {item.admin_response}
+                    </div>
+                ) : (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs border-[#664229]/30 text-[#664229] hover:bg-[#664229]/5"
+                        onClick={() => {
+                            setSelectedFeedback(item);
+                            setData('admin_response', '');
+                        }}
+                    >
+                        Beri Tanggapan
+                    </Button>
+                );
+            },
+        }
     ];
 
     return (
@@ -119,6 +158,43 @@ export default function Index({ feedbacks }: Props) {
                     </CardContent>
                 </Card>
             </div>
+
+            <Dialog open={!!selectedFeedback} onOpenChange={(open) => !open && setSelectedFeedback(null)}>
+                <DialogContent>
+                    <form onSubmit={handleSubmit}>
+                        <DialogHeader>
+                            <DialogTitle>Beri Tanggapan</DialogTitle>
+                            <DialogDescription>
+                                Berikan tanggapan untuk kritik & saran dari {selectedFeedback?.invoice.tenancy.penghuni.name}.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4 space-y-4">
+                            <div className="bg-muted/50 p-3 rounded-md text-sm italic">
+                                "{selectedFeedback?.feedback}"
+                            </div>
+                            <div className="space-y-2">
+                                <Textarea
+                                    value={data.admin_response}
+                                    onChange={(e) => setData('admin_response', e.target.value)}
+                                    placeholder="Tulis tanggapan Anda di sini..."
+                                    className="min-h-[100px]"
+                                />
+                                {errors.admin_response && (
+                                    <p className="text-sm text-red-500">{errors.admin_response}</p>
+                                )}
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={() => setSelectedFeedback(null)}>
+                                Batal
+                            </Button>
+                            <Button type="submit" disabled={processing} className="bg-[#664229] text-white hover:bg-[#8B5A33]">
+                                Simpan Tanggapan
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }
