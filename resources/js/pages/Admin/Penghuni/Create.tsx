@@ -1,6 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, Save, Eye, X } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -65,6 +66,9 @@ export default function Create({ rooms, typeKamars, kos }: Props) {
         room_id: '',
     });
 
+    const [isCheckingNik, setIsCheckingNik] = useState(false);
+    const [existingNikData, setExistingNikData] = useState<any>(null);
+
     const [kkPreview, setKkPreview] = useState<string | null>(null);
     const [ktpPreview, setKtpPreview] = useState<string | null>(null);
 
@@ -87,6 +91,48 @@ export default function Create({ rooms, typeKamars, kos }: Props) {
             setKtpPreview(null);
         }
     }, [data.file_path_ktp]);
+
+    // Lookup NIK logic
+    const lookupNik = useCallback(async (nik: string) => {
+        if (nik.length !== 16) return;
+        
+        setIsCheckingNik(true);
+        try {
+            const response = await axios.get(`/admin/penghuni/check-nik/${nik}`);
+            if (response.data.success) {
+                const resident = response.data.data;
+                setExistingNikData(resident);
+                
+                // Auto-fill form
+                setData((prevData: any) => ({
+                    ...prevData,
+                    username: resident.username || prevData.username,
+                    name: resident.name,
+                    no_wa: resident.no_wa,
+                    religion: resident.religion,
+                    address: resident.address,
+                }));
+                
+                // Set previews for existing files
+                if (resident.file_path_kk) setKkPreview(resident.file_path_kk);
+                if (resident.file_path_ktp) setKtpPreview(resident.file_path_ktp);
+            } else {
+                setExistingNikData(null);
+            }
+        } catch (error) {
+            console.error('Error checking NIK:', error);
+        } finally {
+            setIsCheckingNik(false);
+        }
+    }, [setData]);
+
+    useEffect(() => {
+        if (data.nik.length === 16) {
+            lookupNik(data.nik);
+        } else if (data.nik.length < 16) {
+            setExistingNikData(null);
+        }
+    }, [data.nik, lookupNik]);
 
     const filteredRooms = rooms.filter((room: Room) =>
         (!data.kos_id || room.kos_id.toString() === data.kos_id) &&
@@ -140,7 +186,14 @@ export default function Create({ rooms, typeKamars, kos }: Props) {
                                     value={data.nik}
                                     onChange={(e) => setData('nik', e.target.value)}
                                     placeholder="Nomor Induk Kependudukan (16 Digit)"
+                                    maxLength={16}
                                 />
+                                {isCheckingNik && <p className="text-xs text-blue-500 animate-pulse">Mengecek NIK...</p>}
+                                {existingNikData && (
+                                    <p className="text-xs text-emerald-600 font-medium bg-emerald-50 dark:bg-emerald-900/20 p-2 rounded border border-emerald-100 dark:border-emerald-800">
+                                        Data ditemukan! Profil otomatis dimuat dari database.
+                                    </p>
+                                )}
                                 {errors.nik && <p className="text-xs text-red-600">{errors.nik}</p>}
                             </div>
 
@@ -284,8 +337,11 @@ export default function Create({ rooms, typeKamars, kos }: Props) {
                                 {kkPreview && (
                                     <div className="relative mt-2 rounded-lg border overflow-hidden bg-muted/20 animate-in fade-in zoom-in duration-300">
                                         <div className="p-1 bg-white/80 backdrop-blur-sm border-b flex items-center justify-between px-2 text-[10px] font-medium">
-                                            <span className="flex items-center gap-1"><Eye className="h-3 w-3" /> Preview KK</span>
-                                            <button type="button" onClick={() => setData('file_path_kk', null)} className="hover:text-red-500 transition-colors">
+                                            <span className="flex items-center gap-1"><Eye className="h-3 w-3" /> Preview KK {existingNikData?.file_path_kk === kkPreview && "(Dari Database)"}</span>
+                                            <button type="button" onClick={() => {
+                                                setData('file_path_kk', null);
+                                                setKkPreview(null);
+                                            }} className="hover:text-red-500 transition-colors">
                                                 <X className="h-3 w-3" />
                                             </button>
                                         </div>
@@ -306,8 +362,11 @@ export default function Create({ rooms, typeKamars, kos }: Props) {
                                 {ktpPreview && (
                                     <div className="relative mt-2 rounded-lg border overflow-hidden bg-muted/20 animate-in fade-in zoom-in duration-300">
                                         <div className="p-1 bg-white/80 backdrop-blur-sm border-b flex items-center justify-between px-2 text-[10px] font-medium">
-                                            <span className="flex items-center gap-1"><Eye className="h-3 w-3" /> Preview KTP</span>
-                                            <button type="button" onClick={() => setData('file_path_ktp', null)} className="hover:text-red-500 transition-colors">
+                                            <span className="flex items-center gap-1"><Eye className="h-3 w-3" /> Preview KTP {existingNikData?.file_path_ktp === ktpPreview && "(Dari Database)"}</span>
+                                            <button type="button" onClick={() => {
+                                                setData('file_path_ktp', null);
+                                                setKtpPreview(null);
+                                            }} className="hover:text-red-500 transition-colors">
                                                 <X className="h-3 w-3" />
                                             </button>
                                         </div>

@@ -147,6 +147,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('tagihan/{id}/mark-paid', [App\Http\Controllers\AdminInvoiceController::class, 'markAsPaid'])->name('admin.tagihan.mark-paid');
             Route::get('feedback', [AdminFeedbackController::class, 'index'])->name('admin.feedback.index');
             Route::patch('feedback/{id}', [AdminFeedbackController::class, 'update'])->name('admin.feedback.update');
+
+            // Check NIK Lookup
+            Route::get('penghuni/check-nik/{nik}', \App\Http\Controllers\CheckNikController::class)->name('admin.penghuni.check-nik');
         });
     });
 });

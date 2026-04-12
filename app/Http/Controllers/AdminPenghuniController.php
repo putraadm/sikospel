@@ -116,9 +116,14 @@ class AdminPenghuniController extends Controller
 
     public function store(Request $request)
     {
+        // First, check if NIK already exists to determine if we need a new user
+        $existingPenghuni = null;
+        if ($request->nik) {
+            $existingPenghuni = Penghuni::where('nik', $request->nik)->first();
+        }
+
         $request->validate([
-            'username' => 'required|string|max:255|unique:users,username',
-            // 'nik' => 'required|string|size:16|unique:penghuni,nik',
+            'username' => $existingPenghuni ? 'nullable|string' : 'required|string|max:255|unique:users,username',
             'nik' => 'nullable|string|size:16',
             'name' => 'required|string|max:255',
             'no_wa' => 'nullable|string|max:20',
@@ -131,14 +136,23 @@ class AdminPenghuniController extends Controller
             'room_id' => 'nullable|exists:rooms,id',
         ]);
 
-        return \DB::transaction(function () use ($request) {
-            $password = \Str::random(8);
-            $user = User::create([
-                'username' => $request->username,
-                'email' => $request->username . '@sikospel.com',
-                'password' => bcrypt($password),
-                'role_id' => 4,
-            ]);
+        return \DB::transaction(function () use ($request, $existingPenghuni) {
+            $user = null;
+            $isNewUser = false;
+            $password = null;
+
+            if ($existingPenghuni) {
+                $user = $existingPenghuni->user;
+            } else {
+                $password = \Str::random(8);
+                $user = User::create([
+                    'username' => $request->username,
+                    'email' => $request->username . '@sikospel.com',
+                    'password' => bcrypt($password),
+                    'role_id' => 4,
+                ]);
+                $isNewUser = true;
+            }
 
             $data = $request->only(['nik', 'name', 'no_wa', 'address', 'religion', 'tanggal_daftar', 'status_penghuni']);
             $data['user_id'] = $user->id;
@@ -151,9 +165,23 @@ class AdminPenghuniController extends Controller
                 $data['file_path_ktp'] = $request->file('file_path_ktp')->store('ktp', 'public');
             }
 
-            $penghuni = Penghuni::create($data);
+            if ($existingPenghuni) {
+                $existingPenghuni->update($data);
+                $penghuni = $existingPenghuni;
+            } else {
+                $penghuni = Penghuni::create($data);
+            }
 
             if ($request->room_id) {
+                // Check if already has active tenancy
+                $currentPenyewaan = Penyewaan::where('penghuni_id', $penghuni->user_id)->where('status', 'aktif')->first();
+                
+                if ($currentPenyewaan) {
+                    $currentPenyewaan->update(['status' => 'selesai', 'end_date' => now()]);
+                    $oldRoom = Room::find($currentPenyewaan->room_id);
+                    if ($oldRoom) $oldRoom->update(['status' => 'tersedia']);
+                }
+
                 $penyewaan = Penyewaan::create([
                     'penghuni_id' => $penghuni->user_id,
                     'room_id' => $request->room_id,
@@ -165,11 +193,6 @@ class AdminPenghuniController extends Controller
                 if ($room) {
                     $room->update(['status' => 'ditempati']);
                 }
-
-                $room = Room::find($request->room_id);
-                
-                $urlKtp = $penghuni->file_path_ktp ? asset('storage/' . $penghuni->file_path_ktp) : null;
-                $urlKk = $penghuni->file_path_kk ? asset('storage/' . $penghuni->file_path_kk) : null;
 
                 SyncMutasiPelaporanJob::dispatch(
                     $penghuni->user_id,
@@ -185,13 +208,18 @@ class AdminPenghuniController extends Controller
                 );
             }
 
-            return redirect()->route('penghuni.index')->with('success', 'Akun penghuni berhasil dibuat.')
-                ->with('new_user_account', [
+            $redirect = redirect()->route('penghuni.index')->with('success', $isNewUser ? 'Akun penghuni berhasil dibuat.' : 'Data penghuni diperbarui dan mutasi dicatat.');
+            
+            if ($isNewUser) {
+                $redirect->with('new_user_account', [
                     'username' => $user->username,
                     'email' => $user->email,
                     'password' => $password,
                     'name' => $penghuni->name
                 ]);
+            }
+
+            return $redirect;
         });
     }
 
