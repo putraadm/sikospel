@@ -37,7 +37,7 @@ interface Penghuni {
     file_path_kk: string | null;
     file_path_ktp: string | null;
     tanggal_daftar: string | null;
-    status_penghuni: 'penghuni' | 'pra penghuni';
+    status_penghuni: 'penghuni' | 'pra penghuni' | 'keluar';
     user: {
         email: string;
     };
@@ -119,6 +119,12 @@ export default function Edit({ penghuni, rooms, typeKamars, kos }: Props) {
         (!data.type_kamar_id || room.type_kamar_id.toString() === data.type_kamar_id) &&
         (room.status === 'tersedia' || room.id.toString() === data.room_id)
     );
+
+    useEffect(() => {
+        if (data.status_penghuni === 'keluar') {
+            setData('room_id', '');
+        }
+    }, [data.status_penghuni]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -221,8 +227,14 @@ export default function Edit({ penghuni, rooms, typeKamars, kos }: Props) {
                                     <SelectContent>
                                         <SelectItem value="penghuni">Penghuni Tetap</SelectItem>
                                         <SelectItem value="pra penghuni">Pra Penghuni</SelectItem>
+                                        <SelectItem value="keluar">Sudah Keluar</SelectItem>
                                     </SelectContent>
                                 </Select>
+                                {data.status_penghuni === 'keluar' && (
+                                    <p className="text-[10px] text-amber-600 font-medium mt-1">
+                                        Perhatian: Mengubah status menjadi "Sudah Keluar" akan otomatis mengosongkan unit kamar dan mencatat mutasi keluar.
+                                    </p>
+                                )}
                                 {errors.status_penghuni && <p className="text-xs text-red-600">{errors.status_penghuni}</p>}
                             </div>
                         </div>

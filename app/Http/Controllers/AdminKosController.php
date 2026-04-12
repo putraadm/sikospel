@@ -92,26 +92,17 @@ class AdminKosController extends Controller
 
         $data['slug'] = Str::slug($data['name']);
         $kos = Kos::create($data);
-        try {
-            $pemilik = Pemilik::where('user_id', $kos->owner_id)->first();
-            $response = Http::withToken(env('API_PELAPORAN_TOKEN'))
-                ->post(env('API_PELAPORAN_URL') . '/sync-kos', [
-                    'id_kos'     => $kos->id,
-                    'id_pemilik' => $kos->owner_id,
-                    'nama_pemilik' => $pemilik ? $pemilik->name : 'Tidak Diketahui',
-                    'no_wa_pemilik' => $pemilik ? $pemilik->no_wa : null,
-                    'nama_kos'   => $kos->name,
-                    'alamat'     => $kos->address,
-                ]);
+        
+        $pemilik = Pemilik::where('user_id', $kos->owner_id)->first();
 
-            if ($response->successful() && $response->json('success') === true) {
-                Log::info('Berhasil sync kos ke pelaporan: ' . $kos->name);
-            } else {
-                Log::error('Gagal sync kos ke pelaporan: ' . $response->json('message'));
-            }
-        } catch (\Exception $e) {
-            Log::error('Koneksi ke App Pelaporan terputus: ' . $e->getMessage());
-        }
+        \App\Jobs\SyncKosPelaporanJob::dispatch(
+            $kos->id,
+            $kos->owner_id,
+            $pemilik ? $pemilik->name : 'Tidak Diketahui',
+            $pemilik ? $pemilik->no_wa : null,
+            $kos->name,
+            $kos->address
+        );
 
         return redirect()->back()->with('success', 'Kos berhasil dibuat.');
     }
@@ -169,26 +160,17 @@ class AdminKosController extends Controller
         }
 
         $kos->update($data);
-        try {
-            $pemilik = Pemilik::where('user_id', $kos->owner_id)->first();
+        
+        $pemilik = Pemilik::where('user_id', $kos->owner_id)->first();
 
-            $response = Http::withToken(env('API_PELAPORAN_TOKEN'))
-                ->post(env('API_PELAPORAN_URL') . '/sync-kos', [
-                    'id_kos'        => $kos->id,
-                    'id_pemilik'    => $kos->owner_id,
-                    'nama_pemilik'  => $pemilik ? $pemilik->name : 'Tidak Diketahui',
-                    'no_wa_pemilik' => $pemilik ? $pemilik->no_wa : null,
-                    'nama_kos'      => $kos->name,
-                    'alamat'        => $kos->address,
-                ]);
-
-            if ($response->successful() && $response->json('success') === true) {
-                 Log::info('Berhasil update sync kos: ' . $kos->name);
-            }
-
-        } catch (\Exception $e) {
-            Log::error('Koneksi update App Pelaporan terputus: ' . $e->getMessage());
-        }
+        \App\Jobs\SyncKosPelaporanJob::dispatch(
+            $kos->id,
+            $kos->owner_id,
+            $pemilik ? $pemilik->name : 'Tidak Diketahui',
+            $pemilik ? $pemilik->no_wa : null,
+            $kos->name,
+            $kos->address
+        );
 
         return redirect()->back()->with('success', 'Kos berhasil diperbarui.');
     }
@@ -202,8 +184,12 @@ class AdminKosController extends Controller
              abort(403, 'Unauthorized action.');
         }
 
-        $kos->delete();
+        \DB::transaction(function() use ($kos) {
+            $kos->rooms()->delete();
+            
+            $kos->delete();
+        });
 
-        return redirect()->back()->with('success', 'Kos berhasil dihapus.');
+        return redirect()->back()->with('success', 'Kos berhasil dihapus (Data diarsipkan).');
     }
 }

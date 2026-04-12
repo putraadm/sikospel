@@ -116,21 +116,21 @@ class AdminTypeKamarController extends Controller
 
     public function destroy($id)
     {
-        $typeKamar = TypeKamar::with('images')->where('id', $id);
+        $typeKamar = TypeKamar::with(['images', 'rooms'])->where('id', $id);
         if (auth()->user()->role->name !== 'superadmin') {
             $typeKamar->where('user_id', auth()->id());
         }
         $typeKamar = $typeKamar->firstOrFail();
         
-        // Delete images from storage
-        foreach ($typeKamar->images as $image) {
-            Storage::disk('public')->delete($image->gambar);
-            $image->delete();
-        }
+        \DB::transaction(function() use ($typeKamar) {
+             // Soft delete associated rooms
+             $typeKamar->rooms()->delete();
+             
+             // Soft delete the type kamar
+             $typeKamar->delete();
+        });
 
-        $typeKamar->delete();
-
-        return redirect()->back()->with('success', 'Tipe kamar berhasil dihapus.');
+        return redirect()->back()->with('success', 'Tipe kamar berhasil dihapus (Data diarsipkan).');
     }
 
     public function deleteImage($id)

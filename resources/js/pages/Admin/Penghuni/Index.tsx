@@ -193,12 +193,17 @@ export default function Index({ penghuni, kos, filters, flash }: Props) {
             header: 'Status',
             cell: ({ row }) => {
                 const status = row.original.status_penghuni;
-                const badgeStyles = status === 'penghuni'
-                    ? 'bg-green-100 text-green-700 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400'
-                    : 'bg-blue-100 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400';
+                let badgeStyles = '';
+                if (status === 'penghuni') {
+                    badgeStyles = 'bg-green-100 text-green-700 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400';
+                } else if (status === 'pra penghuni') {
+                    badgeStyles = 'bg-blue-100 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400';
+                } else if (status === 'keluar') {
+                    badgeStyles = 'bg-gray-100 text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-400';
+                }
 
                 return (
-                    <Badge className={cn("capitalize font-semibold border-none shadow-none", badgeStyles)}>
+                    <Badge className={cn("capitalize font-semibold border-none shadow-none text-[10px]", badgeStyles)}>
                         {status}
                     </Badge>
                 );
@@ -289,6 +294,7 @@ export default function Index({ penghuni, kos, filters, flash }: Props) {
                                     <SelectItem value="all">Semua Status</SelectItem>
                                     <SelectItem value="penghuni">Penghuni</SelectItem>
                                     <SelectItem value="pra penghuni">Pra Penghuni</SelectItem>
+                                    <SelectItem value="keluar">Sudah Keluar</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -350,7 +356,9 @@ export default function Index({ penghuni, kos, filters, flash }: Props) {
                                                 "capitalize font-semibold border-none shadow-none",
                                                 selectedPenghuni.status_penghuni === 'penghuni'
                                                     ? 'bg-green-100 text-green-700 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400'
-                                                    : 'bg-blue-100 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400'
+                                                    : selectedPenghuni.status_penghuni === 'pra penghuni'
+                                                    ? 'bg-blue-100 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400'
+                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-400'
                                             )}>
                                                 {selectedPenghuni.status_penghuni}
                                             </Badge>

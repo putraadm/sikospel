@@ -69,8 +69,20 @@ class AdminPemilikController extends Controller
 
     public function destroy($id)
     {
-        $pemilik = Pemilik::findOrFail($id);
-        $pemilik->delete();
-        return redirect()->back()->with('success', 'Pemilik deleted successfully.');
+        $pemilik = Pemilik::with('kos.rooms')->findOrFail($id);
+        
+        \DB::transaction(function() use ($pemilik) {
+            foreach ($pemilik->kos as $kos) {
+                // Soft delete rooms belonging to this kos
+                $kos->rooms()->delete();
+                // Soft delete the kos itself
+                $kos->delete();
+            }
+            
+            // Soft delete the pemilik
+            $pemilik->delete();
+        });
+
+        return redirect()->back()->with('success', 'Pemilik deleted successfully (Data archived).');
     }
 }

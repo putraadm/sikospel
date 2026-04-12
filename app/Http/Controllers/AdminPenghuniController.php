@@ -132,7 +132,7 @@ class AdminPenghuniController extends Controller
             'file_path_kk' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'file_path_ktp' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'tanggal_daftar' => 'nullable|date',
-            'status_penghuni' => 'required|in:penghuni,pra penghuni',
+            'status_penghuni' => 'required|in:penghuni,pra penghuni,keluar',
             'room_id' => 'nullable|exists:rooms,id',
         ]);
 
@@ -235,7 +235,7 @@ class AdminPenghuniController extends Controller
             'file_path_kk' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'file_path_ktp' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'tanggal_daftar' => 'nullable|date',
-            'status_penghuni' => 'required|in:penghuni,pra penghuni',
+            'status_penghuni' => 'required|in:penghuni,pra penghuni,keluar',
             'room_id' => 'nullable|exists:rooms,id',
         ]);
 
@@ -252,10 +252,32 @@ class AdminPenghuniController extends Controller
             }
 
             $penghuni->update($data);
-
             $mutasiDispatched = false;
 
-            if ($request->room_id) {
+            if ($request->status_penghuni === 'keluar') {
+                $currentPenyewaan = $penghuni->currentPenyewaan;
+                if ($currentPenyewaan) {
+                    $room = Room::find($currentPenyewaan->room_id);
+                    if ($room) {
+                        $room->update(['status' => 'tersedia']);
+                        
+                        SyncMutasiPelaporanJob::dispatch(
+                            $penghuni->user_id,
+                            $penghuni->nik,
+                            $penghuni->name,
+                            $penghuni->no_wa,
+                            $penghuni->religion,
+                            null,
+                            null,
+                            $room->kos_id,
+                            'keluar',
+                            now()->format('Y-m-d')
+                        );
+                        $mutasiDispatched = true;
+                    }
+                    $currentPenyewaan->update(['status' => 'selesai', 'end_date' => now()]);
+                }
+            } elseif ($request->room_id) {
                 $currentPenyewaan = $penghuni->currentPenyewaan;
                 
                 if (!$currentPenyewaan || $currentPenyewaan->room_id != $request->room_id) {
@@ -319,7 +341,6 @@ class AdminPenghuniController extends Controller
             }
 
             if (!$mutasiDispatched) {
-                // Gunakan SyncPenghuniPelaporanJob khusus untuk update profil murni tanpa log mutasi
                 \App\Jobs\SyncPenghuniPelaporanJob::dispatch(
                     $penghuni->user_id,
                     $penghuni->nik,
@@ -350,6 +371,8 @@ class AdminPenghuniController extends Controller
                     $idKosKeluar = $room->kos_id;
                     $room->update(['status' => 'tersedia']);
                 }
+                // Akhiri masa sewa
+                $currentPenyewaan->update(['status' => 'selesai', 'end_date' => now()]);
             }
 
             if ($idKosKeluar) {
@@ -359,27 +382,22 @@ class AdminPenghuniController extends Controller
                     $penghuni->name,
                     $penghuni->no_wa,
                     $penghuni->religion,
-                    null,
-                    null,
+                    null, // KTP gak dikirim saat keluar
+                    null, // KK gak dikirim saat keluar
                     $idKosKeluar,
                     'keluar',
                     now()->format('Y-m-d')
                 );
             }
 
-            $tenancyIds = Penyewaan::where('penghuni_id', $id)->pluck('id');
-            $invoiceIds = Invoice::whereIn('tenancy_id', $tenancyIds)->pluck('id');
-            
-            Payment::whereIn('invoice_id', $invoiceIds)->delete();
-            Invoice::whereIn('tenancy_id', $tenancyIds)->delete();
-            Penyewaan::where('penghuni_id', $id)->delete();
-
+            // Soft delete the penghuni
             $penghuni->delete();
+            // Soft delete the user
             if ($user) {
                 $user->delete();
             }
 
-            return redirect()->back()->with('success', 'Penghuni & User account deleted successfully.');
+            return redirect()->back()->with('success', 'Penghuni & User account deleted successfully (Data archived).');
         });
     }
 }

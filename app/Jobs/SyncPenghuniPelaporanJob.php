@@ -72,8 +72,10 @@ class SyncPenghuniPelaporanJob implements ShouldQueue
                 );
             }
 
-            // Using /sync/penghuni instead of /sync-penghuni to follow sipenkos exact route
-            $response = $request->post(env('API_PELAPORAN_URL') . '/sync/penghuni', $data);
+            $url = config('services.pelaporan.url') . '/sync/penghuni';
+            $token = config('services.pelaporan.token');
+
+            $response = $request->withToken($token)->acceptJson()->post($url, $data);
 
             if ($response->successful() && $response->json('success') === true) {
                 Log::info('Berhasil sync profil PENGHUNI murni via Job ke pelaporan');

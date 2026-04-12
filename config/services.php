@@ -34,5 +34,10 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    
+    'pelaporan' => [
+        'url' => env('API_PELAPORAN_URL'),
+        'token' => env('API_PELAPORAN_TOKEN'),
+    ],
 
 ];

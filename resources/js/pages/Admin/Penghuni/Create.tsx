@@ -254,6 +254,7 @@ export default function Create({ rooms, typeKamars, kos }: Props) {
                                     <SelectContent>
                                         <SelectItem value="penghuni">Penghuni Tetap</SelectItem>
                                         <SelectItem value="pra penghuni">Pra Penghuni</SelectItem>
+                                        <SelectItem value="keluar">Sudah Keluar</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 {errors.status_penghuni && <p className="text-xs text-red-600">{errors.status_penghuni}</p>}

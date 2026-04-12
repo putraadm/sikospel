@@ -54,8 +54,11 @@ class SyncMutasiPelaporanJob implements ShouldQueue
      */
     public function handle(): void
     {
+        $url = config('services.pelaporan.url') . '/sync/mutasi';
+        $token = config('services.pelaporan.token');
+
         try {
-            $request = Http::timeout(15)->withToken(env('API_PELAPORAN_TOKEN'));
+            $request = Http::timeout(20)->withToken($token)->acceptJson();
 
             $data = [
                 'id_penghuni'    => $this->idPenghuni,
@@ -84,12 +87,13 @@ class SyncMutasiPelaporanJob implements ShouldQueue
                 );
             }
 
-            $response = $request->post(env('API_PELAPORAN_URL') . '/sync-mutasi', $data);
+            $response = $request->post($url, $data);
 
             if ($response->successful() && $response->json('success') === true) {
                 Log::info('Berhasil sync mutasi ' . strtoupper($this->jenisMutasi) . ' via Job ke pelaporan');
             } else {
-                Log::error('Gagal sync mutasi ' . strtoupper($this->jenisMutasi) . ' via Job ke pelaporan: ' . $response->json('message'));
+                Log::error('Gagal sync mutasi ' . strtoupper($this->jenisMutasi) . ' via Job ke pelaporan. ' . 
+                    'Status: ' . $response->status() . ' - Response: ' . $response->body());
             }
         } catch (\Exception $e) {
             Log::error('Job API Sync Mutasi gagal: ' . $e->getMessage());
