@@ -64,9 +64,12 @@ class SyncPendapatanPelaporanJob implements ShouldQueue
                 // fall back to original if parsing fails
             }
         }
+        $url = config('services.pelaporan.url') . '/sync/pendapatan';
+        $token = config('services.pelaporan.token');
 
-        $response = Http::timeout(30)->withToken(env('API_PELAPORAN_TOKEN'))
-            ->post(env('API_PELAPORAN_URL') . '/sync-pendapatan', [
+        Log::info('DEBUG: Menghubungi URL Pelaporan: ' . $url);
+        $response = Http::timeout(30)->withToken($token)
+            ->post($url, [
                 'id_kos'             => $this->idKos,
                 'id_pemilik'         => $this->idPemilik,
                 'nama_kos'           => $this->namaKos,

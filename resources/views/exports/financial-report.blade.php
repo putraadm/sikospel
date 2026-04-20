@@ -160,12 +160,12 @@
         <tbody>
             @forelse($payments as $payment)
                 <tr>
-                    <td class="text-center">{{ \Carbon\Carbon::parse($payment->payment_date)->format('d/m/Y') }}</td>
-                    <td>{{ $payment->penghuni_name ?? 'N/A' }}</td>
-                    <td>{{ $payment->kos_name }}</td>
-                    <td>Kamar {{ $payment->room_number }} ({{ $payment->type_kamar_nama ?? '-' }})</td>
-                    <td>{{ $payment->billing_period ? \Carbon\Carbon::parse($payment->billing_period)->translatedFormat('F Y') : '-' }}</td>
-                    <td class="text-right">{{ number_format($payment->amount_paid, 0, ',', '.') }}</td>
+                    <td class="text-center">{{ isset($payment['tanggal_pembayaran']) ? \Carbon\Carbon::parse($payment['tanggal_pembayaran'])->format('d/m/Y') : '-' }}</td>
+                    <td>{{ $payment['nama_penghuni'] ?? 'N/A' }}</td>
+                    <td>{{ $payment['nama_kos'] ?? 'N/A' }}</td>
+                    <td>Kamar {{ $payment['nomor_kamar'] ?? '-' }} ({{ $payment['tipe_kamar'] ?? '-' }})</td>
+                    <td>{{ isset($payment['periode_tagihan']) ? \Carbon\Carbon::parse($payment['periode_tagihan'])->translatedFormat('F Y') : '-' }}</td>
+                    <td class="text-right">{{ number_format($payment['nominal'] ?? 0, 0, ',', '.') }}</td>
                 </tr>
             @empty
                 <tr>

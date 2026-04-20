@@ -9,7 +9,7 @@ class PelaporanService{
     private function syncMutasiKePelaporan($penghuni, $idKos, $jenisMutasi)
     {
         try {
-            $request = Http::timeout(10)->withToken(env('API_PELAPORAN_TOKEN'));
+            $request = Http::timeout(10)->withToken(config('services.pelaporan.token'));
 
             $data = [
                 'id_penghuni' => $penghuni->id,
@@ -38,7 +38,7 @@ class PelaporanService{
                 );
             }
 
-            $response = $request->post(env('API_PELAPORAN_URL') . '/sync-mutasi', $data);
+            $response = $request->post(config('services.pelaporan.url') . '/sync/mutasi', $data);
 
             if (!$response->successful()) {
                 Log::error('Sync mutasi gagal', [

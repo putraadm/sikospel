@@ -35,8 +35,8 @@ class FinancialReportController extends Controller
         }
 
         try {
-            $response = Http::timeout(30)->withToken(env('API_PELAPORAN_TOKEN'))
-                ->get(env('API_PELAPORAN_URL') . '/laporan-pendapatan', array_filter($params));
+            $response = Http::timeout(30)->withToken(config('services.pelaporan.token'))
+                ->get(config('services.pelaporan.url') . '/laporan/pendapatan', array_filter($params));
 
             if ($response->successful()) {
                 $apiData = $response->json('data');
@@ -90,8 +90,8 @@ class FinancialReportController extends Controller
         }
 
         try {
-            $response = Http::timeout(30)->withToken(env('API_PELAPORAN_TOKEN'))
-                ->get(env('API_PELAPORAN_URL') . '/laporan-pendapatan', array_filter($params));
+            $response = Http::timeout(30)->withToken(config('services.pelaporan.token'))
+                ->get(config('services.pelaporan.url') . '/laporan/pendapatan', array_filter($params));
             
             $payments = $response->successful() ? collect($response->json('data.laporan')) : collect([]);
         } catch (\Exception $e) {
@@ -140,8 +140,8 @@ class FinancialReportController extends Controller
         }
 
         try {
-            $response = Http::timeout(30)->withToken(env('API_PELAPORAN_TOKEN'))
-                ->get(env('API_PELAPORAN_URL') . '/laporan-pendapatan', array_filter($params));
+            $response = Http::timeout(30)->withToken(config('services.pelaporan.token'))
+                ->get(config('services.pelaporan.url') . '/laporan/pendapatan', array_filter($params));
             
             $payments = $response->successful() ? collect($response->json('data.laporan')) : collect([]);
         } catch (\Exception $e) {
