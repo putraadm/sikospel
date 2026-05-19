@@ -237,11 +237,13 @@ class AdminPenghuniController extends Controller
             'tanggal_daftar' => 'nullable|date',
             'status_penghuni' => 'required|in:penghuni,pra penghuni,keluar',
             'room_id' => 'nullable|exists:rooms,id',
+            'rating' => 'nullable|in:baik,buruk',
+            'keterangan_rating' => 'nullable|string',
         ]);
 
         return \DB::transaction(function () use ($request, $id) {
             $penghuni = Penghuni::findOrFail($id);
-            $data = $request->only(['nik', 'name', 'no_wa', 'address', 'religion', 'tanggal_daftar', 'status_penghuni']);
+            $data = $request->only(['nik', 'name', 'no_wa', 'address', 'religion', 'tanggal_daftar', 'status_penghuni', 'rating', 'keterangan_rating']);
 
             if ($request->hasFile('file_path_kk')) {
                 $data['file_path_kk'] = $request->file('file_path_kk')->store('kk', 'public');
@@ -271,7 +273,9 @@ class AdminPenghuniController extends Controller
                             null,
                             $room->kos_id,
                             'keluar',
-                            now()->format('Y-m-d')
+                            now(),
+                            $request->rating,
+                            $request->keterangan_rating
                         );
                         $mutasiDispatched = true;
                     }
@@ -318,7 +322,7 @@ class AdminPenghuniController extends Controller
                                 null, // KK gak dikirim kalau keluar
                                 $oldKosId,
                                 'keluar',
-                                now()->format('Y-m-d')
+                                now()
                             );
                         }
 
@@ -333,7 +337,7 @@ class AdminPenghuniController extends Controller
                             $penghuni->file_path_kk,
                             $newKosId,
                             'masuk',
-                            $request->tanggal_daftar ?? now()->format('Y-m-d')
+                            $request->tanggal_daftar ? $request->tanggal_daftar . ' ' . now()->format('H:i:s') : now()
                         );
                         $mutasiDispatched = true;
                     }

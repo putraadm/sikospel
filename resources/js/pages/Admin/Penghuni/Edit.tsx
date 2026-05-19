@@ -85,6 +85,8 @@ export default function Edit({ penghuni, rooms, typeKamars, kos }: Props) {
         kos_id: penghuni.current_room?.kos?.id.toString() || '',
         type_kamar_id: penghuni.current_room?.type_kamar?.id.toString() || '',
         room_id: penghuni.current_room?.id.toString() || '',
+        rating: '',
+        keterangan_rating: '',
     });
 
     const [kkPreview, setKkPreview] = useState<string | null>(penghuni.file_path_kk ? `/storage/${penghuni.file_path_kk}` : null);
@@ -231,9 +233,41 @@ export default function Edit({ penghuni, rooms, typeKamars, kos }: Props) {
                                     </SelectContent>
                                 </Select>
                                 {data.status_penghuni === 'keluar' && (
-                                    <p className="text-[10px] text-amber-600 font-medium mt-1">
-                                        Perhatian: Mengubah status menjadi "Sudah Keluar" akan otomatis mengosongkan unit kamar dan mencatat mutasi keluar.
-                                    </p>
+                                    <div className="mt-4 p-4 border rounded-lg bg-amber-50/30 border-amber-200 animate-in slide-in-from-top-2 duration-300">
+                                        <p className="text-[10px] text-amber-600 font-medium mb-3">
+                                            Perhatian: Mengubah status menjadi "Sudah Keluar" akan otomatis mengosongkan unit kamar dan mencatat mutasi keluar.
+                                        </p>
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="rating">Rating Perilaku Penghuni</Label>
+                                                <Select value={data.rating} onValueChange={(val: any) => setData('rating', val)}>
+                                                    <SelectTrigger id="rating" className="bg-white">
+                                                        <SelectValue placeholder="Beri Rating" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="baik">Baik</SelectItem>
+                                                        <SelectItem value="buruk">Buruk</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                {errors.rating && <p className="text-xs text-red-600">{errors.rating}</p>}
+                                            </div>
+
+                                            {data.rating === 'buruk' && (
+                                                <div className="space-y-2 animate-in slide-in-from-top-1 duration-200">
+                                                    <Label htmlFor="keterangan_rating">Alasan Rating Buruk</Label>
+                                                    <Textarea
+                                                        id="keterangan_rating"
+                                                        value={data.keterangan_rating}
+                                                        onChange={(e) => setData('keterangan_rating', e.target.value)}
+                                                        placeholder="Tuliskan alasan atau keburukan penghuni (misal: merusak properti, berisik, dsb)"
+                                                        rows={2}
+                                                        className="bg-white"
+                                                    />
+                                                    {errors.keterangan_rating && <p className="text-xs text-red-600">{errors.keterangan_rating}</p>}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 )}
                                 {errors.status_penghuni && <p className="text-xs text-red-600">{errors.status_penghuni}</p>}
                             </div>

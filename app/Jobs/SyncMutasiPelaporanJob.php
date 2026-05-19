@@ -21,6 +21,8 @@ class SyncMutasiPelaporanJob implements ShouldQueue
     protected $idKos;
     protected $jenisMutasi;
     protected $tanggalMutasi;
+    protected $rating;
+    protected $keteranganRating;
 
     /**
      * Create a new job instance.
@@ -35,7 +37,9 @@ class SyncMutasiPelaporanJob implements ShouldQueue
         $fileKkPath,
         $idKos,
         $jenisMutasi,
-        $tanggalMutasi
+        $tanggalMutasi,
+        $rating = null,
+        $keteranganRating = null
     ) {
         $this->idPenghuni = $idPenghuni;
         $this->nik = $nik;
@@ -47,6 +51,8 @@ class SyncMutasiPelaporanJob implements ShouldQueue
         $this->idKos = $idKos;
         $this->jenisMutasi = $jenisMutasi;
         $this->tanggalMutasi = $tanggalMutasi;
+        $this->rating = $rating;
+        $this->keteranganRating = $keteranganRating;
     }
 
     /**
@@ -69,6 +75,8 @@ class SyncMutasiPelaporanJob implements ShouldQueue
                 'id_kos'         => $this->idKos,
                 'jenis_mutasi'   => $this->jenisMutasi,
                 'tanggal_mutasi' => $this->tanggalMutasi,
+                'rating'         => $this->rating,
+                'keterangan_rating' => $this->keteranganRating,
             ];
 
             if ($this->fileKtpPath && \Storage::disk('public')->exists($this->fileKtpPath)) {
