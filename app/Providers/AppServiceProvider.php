@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rules\Password;
+use App\Models\Invoice;
+use App\Observers\InvoiceObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -28,8 +30,12 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
+        // Register Invoice model observer
+        Invoice::observe(InvoiceObserver::class);
+
         $this->configureDefaults();
     }
+
 
     protected function configureDefaults(): void
     {

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use App\Models\Invoice;
+use App\Services\WhatsAppService;
 use App\Models\Kos;
 use App\Models\Payment;
 use App\Models\Penghuni;
@@ -217,6 +218,9 @@ class AdminPenghuniController extends Controller
             $redirect = redirect()->route('penghuni.index')->with('success', $isNewUser ? 'Akun penghuni berhasil dibuat.' : 'Data penghuni diperbarui dan mutasi dicatat.');
             
             if ($isNewUser) {
+                // Send WA Notification containing credentials and warning description
+                WhatsAppService::sendNewAccountNotification($penghuni, $password);
+
                 $redirect->with('new_user_account', [
                     'username' => $user->username,
                     'email' => $user->email,
@@ -242,11 +246,13 @@ class AdminPenghuniController extends Controller
             'tanggal_daftar' => 'nullable|date',
             'status_penghuni' => 'required|in:penghuni,pra penghuni,keluar',
             'room_id' => 'nullable|exists:rooms,id',
+            'rating' => 'nullable|in:baik,buruk',
+            'keterangan_rating' => 'nullable|string',
         ]);
 
         return \DB::transaction(function () use ($request, $id) {
             $penghuni = Penghuni::findOrFail($id);
-            $data = $request->only(['nik', 'name', 'no_wa', 'address', 'religion', 'tanggal_daftar', 'status_penghuni']);
+            $data = $request->only(['nik', 'name', 'no_wa', 'address', 'religion', 'tanggal_daftar', 'status_penghuni', 'rating', 'keterangan_rating']);
 
             if ($request->hasFile('file_path_kk')) {
                 $data['file_path_kk'] = $request->file('file_path_kk')->store('kk', 'public');
@@ -276,7 +282,9 @@ class AdminPenghuniController extends Controller
                             null,
                             $room->kos_id,
                             'keluar',
-                            now()->format('Y-m-d')
+                            now(),
+                            $request->rating,
+                            $request->keterangan_rating
                         );
                         $mutasiDispatched = true;
                     }
@@ -328,7 +336,7 @@ class AdminPenghuniController extends Controller
                                 null, // KK gak dikirim kalau keluar
                                 $oldKosId,
                                 'keluar',
-                                now()->format('Y-m-d')
+                                now()
                             );
                         }
 
@@ -343,7 +351,7 @@ class AdminPenghuniController extends Controller
                             $penghuni->file_path_kk,
                             $newKosId,
                             'masuk',
-                            $request->tanggal_daftar ?? now()->format('Y-m-d')
+                            $request->tanggal_daftar ? $request->tanggal_daftar . ' ' . now()->format('H:i:s') : now()
                         );
                         $mutasiDispatched = true;
                     }

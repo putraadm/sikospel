@@ -40,4 +40,9 @@ return [
         'token' => env('API_PELAPORAN_TOKEN'),
     ],
 
+    'wa' => [
+        'token' => env('FONNTE_TOKEN'),
+    ],
+
 ];
+
