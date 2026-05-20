@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use App\Models\Invoice;
+use App\Services\WhatsAppService;
 use App\Models\Kos;
 use App\Models\Payment;
 use App\Models\Penghuni;
@@ -211,6 +212,9 @@ class AdminPenghuniController extends Controller
             $redirect = redirect()->route('penghuni.index')->with('success', $isNewUser ? 'Akun penghuni berhasil dibuat.' : 'Data penghuni diperbarui dan mutasi dicatat.');
             
             if ($isNewUser) {
+                // Send WA Notification containing credentials and warning description
+                WhatsAppService::sendNewAccountNotification($penghuni, $password);
+
                 $redirect->with('new_user_account', [
                     'username' => $user->username,
                     'email' => $user->email,
