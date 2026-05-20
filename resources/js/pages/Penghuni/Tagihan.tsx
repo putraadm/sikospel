@@ -37,6 +37,7 @@ interface InvoiceData {
             room_number: string;
             kos: {
                 name: string;
+                midtrans_client_key?: string;
             };
         };
     };
@@ -112,17 +113,21 @@ export default function Tagihan({ invoices, midtrans_client_key, midtrans_is_pro
     };
 
     useEffect(() => {
+        // Cari client key dari kos (jika ada yang custom per kos)
+        const customClientKey = invoices.find(i => i.tenancy?.room?.kos?.midtrans_client_key)?.tenancy?.room?.kos?.midtrans_client_key;
+        const activeClientKey = customClientKey || midtrans_client_key;
+
         const script = document.createElement('script');
         script.src = midtrans_is_production
             ? 'https://app.midtrans.com/snap/snap.js'
             : 'https://app.sandbox.midtrans.com/snap/snap.js';
-        script.setAttribute('data-client-key', midtrans_client_key);
+        script.setAttribute('data-client-key', activeClientKey);
         document.body.appendChild(script);
 
         return () => {
             document.body.removeChild(script);
         };
-    }, [midtrans_client_key]);
+    }, [midtrans_client_key, invoices]);
 
     const handlePayment = async (invoiceId: number) => {
         setLoadingInvoiceId(invoiceId);

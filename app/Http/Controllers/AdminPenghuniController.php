@@ -281,6 +281,11 @@ class AdminPenghuniController extends Controller
                         $mutasiDispatched = true;
                     }
                     $currentPenyewaan->update(['status' => 'selesai', 'end_date' => now()]);
+                    
+                    // Hapus tagihan yang belum dibayar jika penghuni keluar
+                    Invoice::where('tenancy_id', $currentPenyewaan->id)
+                        ->where('status', 'belum_dibayar')
+                        ->delete();
                 }
             } elseif ($request->room_id) {
                 $currentPenyewaan = $penghuni->currentPenyewaan;
@@ -378,6 +383,11 @@ class AdminPenghuniController extends Controller
                 }
                 // Akhiri masa sewa
                 $currentPenyewaan->update(['status' => 'selesai', 'end_date' => now()]);
+
+                // Hapus tagihan yang belum dibayar saat penghuni dihapus
+                Invoice::where('tenancy_id', $currentPenyewaan->id)
+                    ->where('status', 'belum_dibayar')
+                    ->delete();
             }
 
             if ($idKosKeluar) {

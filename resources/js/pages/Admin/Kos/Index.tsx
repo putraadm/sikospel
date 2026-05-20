@@ -39,6 +39,8 @@ export default function Index({ kos, pemilik, userRole }: Props) {
         description: '',
         image: null as File | null,
         gender_type: 'campuran',
+        midtrans_server_key: '',
+        midtrans_client_key: '',
     });
 
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -50,6 +52,8 @@ export default function Index({ kos, pemilik, userRole }: Props) {
         description: '',
         image: null as File | null,
         gender_type: 'campuran',
+        midtrans_server_key: '',
+        midtrans_client_key: '',
         _method: 'PUT',
     });
 
@@ -80,6 +84,8 @@ export default function Index({ kos, pemilik, userRole }: Props) {
             description: item.description,
             image: null,
             gender_type: item.gender_type,
+            midtrans_server_key: item.midtrans_server_key || '',
+            midtrans_client_key: item.midtrans_client_key || '',
             _method: 'PUT',
         });
     };
@@ -94,6 +100,8 @@ export default function Index({ kos, pemilik, userRole }: Props) {
             description: '',
             image: null,
             gender_type: 'campuran',
+            midtrans_server_key: '',
+            midtrans_client_key: '',
             _method: 'PUT',
         });
     };
@@ -110,6 +118,8 @@ export default function Index({ kos, pemilik, userRole }: Props) {
                     description: '',
                     image: null,
                     gender_type: 'campuran',
+                    midtrans_server_key: '',
+                    midtrans_client_key: '',
                     _method: 'PUT',
                 });
             },
@@ -358,7 +368,33 @@ export default function Index({ kos, pemilik, userRole }: Props) {
                                 )}
                                 {errors.image && <p className="text-sm text-red-600">{errors.image}</p>}
                             </div>
-                            <div className="flex justify-end gap-2">
+                            <div className="grid grid-cols-2 gap-4 border-t pt-4">
+                                <div className="col-span-2">
+                                    <h3 className="text-sm font-medium text-muted-foreground">Konfigurasi Midtrans (Opsional)</h3>
+                                    <p className="text-xs text-muted-foreground mb-2">Isi jika kos ini memiliki akun Midtrans sendiri. Jika kosong, akan menggunakan akun utama.</p>
+                                </div>
+                                <div>
+                                    <Label htmlFor="midtrans_server_key">Server Key</Label>
+                                    <Input
+                                        id="midtrans_server_key"
+                                        value={data.midtrans_server_key}
+                                        onChange={(e) => setData('midtrans_server_key', e.target.value)}
+                                        placeholder="SB-Mid-server-..."
+                                    />
+                                    {errors.midtrans_server_key && <p className="text-sm text-red-600">{errors.midtrans_server_key}</p>}
+                                </div>
+                                <div>
+                                    <Label htmlFor="midtrans_client_key">Client Key</Label>
+                                    <Input
+                                        id="midtrans_client_key"
+                                        value={data.midtrans_client_key}
+                                        onChange={(e) => setData('midtrans_client_key', e.target.value)}
+                                        placeholder="SB-Mid-client-..."
+                                    />
+                                    {errors.midtrans_client_key && <p className="text-sm text-red-600">{errors.midtrans_client_key}</p>}
+                                </div>
+                            </div>
+                            <div className="flex justify-end gap-2 pt-4">
                                 <Button type="button" variant="outline" onClick={() => setShowCreateModal(false)}>
                                     Batal
                                 </Button>
@@ -457,7 +493,31 @@ export default function Index({ kos, pemilik, userRole }: Props) {
                                     </div>
                                 )}
                             </div>
-                            <div className="flex justify-end gap-2">
+                            <div className="grid grid-cols-2 gap-4 border-t pt-4">
+                                <div className="col-span-2">
+                                    <h3 className="text-sm font-medium text-muted-foreground">Konfigurasi Midtrans (Opsional)</h3>
+                                    <p className="text-xs text-muted-foreground mb-2">Isi jika kos ini memiliki akun Midtrans sendiri. Jika kosong, akan menggunakan akun utama.</p>
+                                </div>
+                                <div>
+                                    <Label htmlFor="edit-midtrans_server_key">Server Key</Label>
+                                    <Input
+                                        id="edit-midtrans_server_key"
+                                        value={editData.midtrans_server_key}
+                                        onChange={(e) => setEditData({ ...editData, midtrans_server_key: e.target.value })}
+                                        placeholder="SB-Mid-server-..."
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="edit-midtrans_client_key">Client Key</Label>
+                                    <Input
+                                        id="edit-midtrans_client_key"
+                                        value={editData.midtrans_client_key}
+                                        onChange={(e) => setEditData({ ...editData, midtrans_client_key: e.target.value })}
+                                        placeholder="SB-Mid-client-..."
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex justify-end gap-2 pt-4">
                                 <Button type="button" variant="outline" onClick={handleCancelEdit}>
                                     Batal
                                 </Button>
