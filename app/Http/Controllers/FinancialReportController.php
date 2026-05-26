@@ -20,7 +20,6 @@ class FinancialReportController extends Controller
         $user = auth()->user();
         $isSuperadmin = $user->role->name === 'superadmin';
         
-        // Prepare API Parameters
         $params = [
             'bulan'  => $request->bulan === 'all' ? null : $request->bulan,
             'tahun'  => $request->tahun === 'all' ? null : $request->tahun,
@@ -35,16 +34,13 @@ class FinancialReportController extends Controller
         }
 
         try {
-            $response = Http::timeout(30)->withToken(env('API_PELAPORAN_TOKEN'))
-                ->get(env('API_PELAPORAN_URL') . '/laporan/pendapatan', array_filter($params));
+            $response = Http::timeout(30)->withToken(config('services.pelaporan.token'))
+                ->get(config('services.pelaporan.url') . '/laporan/pendapatan', array_filter($params));
 
             if ($response->successful()) {
                 $apiData = $response->json('data');
                 $agregasi = $apiData['agregasi'];
                 $laporan = $apiData['laporan'];
-
-                // Re-format for pagination compatibility if needed (Inertia expects specific structure)
-                // App2 returns $laporan which is already a paginated object if not 'cetak=true'
             } else {
                 Log::error('Gagal mengambil laporan dari API', ['status' => $response->status(), 'body' => $response->body()]);
                 $agregasi = ['hari_ini' => 0, 'bulan_ini' => 0, 'tahun_ini' => 0, 'keseluruhan' => 0];
@@ -55,8 +51,6 @@ class FinancialReportController extends Controller
             $agregasi = ['hari_ini' => 0, 'bulan_ini' => 0, 'tahun_ini' => 0, 'keseluruhan' => 0];
             $laporan = ['data' => [], 'links' => [], 'total' => 0];
         }
-
-        // Get Kos list for filter (Still local to App1)
         $kosList = $isSuperadmin ? Kos::all() : Kos::where('owner_id', $user->id)->get();
 
         return Inertia::render('admin/LaporanKeuangan/Index', [
@@ -140,8 +134,8 @@ class FinancialReportController extends Controller
         }
 
         try {
-            $response = Http::timeout(30)->withToken(env('API_PELAPORAN_TOKEN'))
-                ->get(env('API_PELAPORAN_URL') . '/laporan/pendapatan', array_filter($params));
+            $response = Http::timeout(30)->withToken(config('services.pelaporan.token'))
+                ->get(config('services.pelaporan.url') . '/laporan/pendapatan', array_filter($params));
             
             $payments = $response->successful() ? collect($response->json('data.laporan')) : collect([]);
         } catch (\Exception $e) {

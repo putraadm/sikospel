@@ -5,8 +5,10 @@ import {
     BedDouble,
     CreditCard,
     Clock,
-    UserPlus
+    UserPlus,
+    TrendingUp
 } from 'lucide-react';
+import { useState, useMemo } from 'react';
 
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
@@ -43,6 +45,23 @@ interface DashboardProps {
         status: string;
         method: string;
     }>;
+    sipenkosLaporan?: Array<{
+        id: number;
+        kos_id: number;
+        pemilik_id: number;
+        nama_kos: string;
+        nama_penghuni: string;
+        nomor_kamar: string;
+        tipe_kamar: string;
+        periode_tagihan: string;
+        metode_pembayaran: string;
+        nominal: string | number;
+        tanggal_pembayaran: string;
+    }>;
+    kosList?: Array<{
+        id: number;
+        name: string;
+    }>;
 }
 
 export default function Dashboard({
@@ -51,8 +70,113 @@ export default function Dashboard({
     totalKamar = 0,
     totalPendapatan = 0,
     latestPenghuni = [],
-    latestPayments = []
+    latestPayments = [],
+    sipenkosLaporan = [],
+    kosList = []
 }: DashboardProps) {
+
+    const [selectedKosId, setSelectedKosId] = useState<string>('all');
+    const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
+    const processedData = useMemo(() => {
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        const months: Array<{
+            key: string;
+            label: string;
+            total: number;
+            count: number;
+        }> = [];
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(1); // prevent month skipping
+            d.setMonth(d.getMonth() - i);
+            months.push({
+                key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+                label: `${monthNames[d.getMonth()]} ${d.getFullYear()}`,
+                total: 0,
+                count: 0
+            });
+        }
+
+        const data = Array.isArray(sipenkosLaporan) ? sipenkosLaporan : [];
+        if (data.length === 0) {
+            return months;
+        }
+
+        const filtered = data.filter(item => {
+            if (selectedKosId === 'all') return true;
+            return String(item.kos_id) === selectedKosId;
+        });
+
+        filtered.forEach(item => {
+            const rawDate = item.tanggal_pembayaran;
+            if (!rawDate) return;
+            // Handle MySQL datetime format "2026-01-01 06:57:16" by replacing space with T
+            const dateStr = typeof rawDate === 'string' ? rawDate.replace(' ', 'T') : rawDate;
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return;
+
+            const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            const monthObj = months.find(m => m.key === key);
+            if (monthObj) {
+                monthObj.total += parseFloat(String(item.nominal)) || 0;
+                monthObj.count += 1;
+            }
+        });
+
+        return months;
+    }, [sipenkosLaporan, selectedKosId]);
+
+    const maxVal = useMemo(() => {
+        const values = processedData.map(d => d.total);
+        const max = Math.max(...values, 0);
+        return max > 0 ? max * 1.15 : 1000000;
+    }, [processedData]);
+
+    const formatCompact = (val: number) => {
+        if (val >= 1000000) {
+            return `Rp ${(val / 1000000).toFixed(1).replace(/\.0$/, '')}jt`;
+        }
+        if (val >= 1000) {
+            return `Rp ${(val / 1000).toFixed(0)}rb`;
+        }
+        return `Rp ${val}`;
+    };
+
+    const viewBoxWidth = 600;
+    const viewBoxHeight = 260;
+    const paddingLeft = 65;
+    const paddingRight = 20;
+    const paddingTop = 25;
+    const paddingBottom = 40;
+
+    const points = useMemo(() => {
+        return processedData.map((d, i) => {
+            const x = paddingLeft + (i * (viewBoxWidth - paddingLeft - paddingRight)) / 5;
+            const y = viewBoxHeight - paddingBottom - (d.total / maxVal) * (viewBoxHeight - paddingTop - paddingBottom);
+            return { x, y, ...d };
+        });
+    }, [processedData, maxVal]);
+
+    const lineD = useMemo(() => {
+        return points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+    }, [points]);
+
+    const areaD = useMemo(() => {
+        if (points.length === 0) return '';
+        return `${lineD} L ${points[points.length - 1].x} ${viewBoxHeight - paddingBottom} L ${points[0].x} ${viewBoxHeight - paddingBottom} Z`;
+    }, [points, lineD]);
+
+    const gridLines = useMemo(() => {
+        const lines = [];
+        for (let j = 0; j <= 4; j++) {
+            const ratio = j / 4;
+            const y = paddingTop + ratio * (viewBoxHeight - paddingTop - paddingBottom);
+            const value = maxVal * (1 - ratio);
+            lines.push({ y, value });
+        }
+        return lines;
+    }, [maxVal]);
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('id-ID', {
@@ -241,6 +365,210 @@ export default function Dashboard({
                         </CardContent>
                     </Card>
                 </div>
+
+                {/* Chart Section */}
+                <Card className="shadow-sm border border-gray-100 mt-6">
+                    <CardHeader className="border-b border-gray-100 bg-gray-50/50 pb-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div className="space-y-1">
+                                <CardTitle className="text-lg font-semibold text-gray-800">Total Pendapatan</CardTitle>
+                                <CardDescription className="text-sm">
+                                    Visualisasi total pendapatan bulanan.
+                                </CardDescription>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Filter:</span>
+                                <select
+                                    value={selectedKosId}
+                                    onChange={(e) => setSelectedKosId(e.target.value)}
+                                    className="block w-48 rounded-lg border border-gray-200 py-1.5 px-3 text-sm font-medium focus:border-[#664229] focus:outline-none focus:ring-1 focus:ring-[#664229] bg-white text-gray-700 shadow-sm transition-all hover:bg-gray-50"
+                                >
+                                    <option value="all">Semua Kos (Total)</option>
+                                    {kosList.map((kos) => (
+                                        <option key={kos.id} value={String(kos.id)}>
+                                            {kos.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="pt-8 px-6 pb-6 relative">
+                        {sipenkosLaporan.length === 0 && (
+                            <div className="absolute inset-0 bg-white/80 backdrop-blur-[2px] flex flex-col items-center justify-center text-center p-4 z-10 rounded-b-xl">
+                                <TrendingUp className="h-10 w-10 text-gray-300 mb-2 animate-pulse" />
+                                <p className="text-sm font-semibold text-gray-600">Data Tidak Ditemukan</p>
+                            </div>
+                        )}
+
+                        <div className="relative w-full h-[260px] select-none">
+                            <svg
+                                viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`}
+                                width="100%"
+                                height="100%"
+                                className="overflow-visible"
+                            >
+                                <defs>
+                                    {/* Gradient fill */}
+                                    <linearGradient id="chart-gradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#664229" stopOpacity="0.25" />
+                                        <stop offset="100%" stopColor="#664229" stopOpacity="0.00" />
+                                    </linearGradient>
+                                    {/* Drop shadow on line */}
+                                    <filter id="shadow" x="-5%" y="-5%" width="110%" height="115%">
+                                        <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#664229" floodOpacity="0.15" />
+                                    </filter>
+                                </defs>
+
+                                {/* Y-Axis Grid Lines */}
+                                {gridLines.map((line, idx) => (
+                                    <g key={idx}>
+                                        <line
+                                            x1={paddingLeft}
+                                            y1={line.y}
+                                            x2={viewBoxWidth - paddingRight}
+                                            y2={line.y}
+                                            stroke="#f3f4f6"
+                                            strokeWidth="1"
+                                            strokeDasharray={idx === 4 ? "0" : "4 4"} // solid line for ground
+                                        />
+                                        <text
+                                            x={paddingLeft - 10}
+                                            y={line.y + 4}
+                                            textAnchor="end"
+                                            className="text-[10px] font-semibold fill-gray-400 font-sans"
+                                        >
+                                            {formatCompact(line.value)}
+                                        </text>
+                                    </g>
+                                ))}
+
+                                {/* Area Path */}
+                                {points.length > 0 && maxVal > 0 && (
+                                    <path
+                                        d={areaD}
+                                        fill="url(#chart-gradient)"
+                                        className="transition-all duration-500 ease-out"
+                                    />
+                                )}
+
+                                {/* Line Path */}
+                                {points.length > 0 && maxVal > 0 && (
+                                    <path
+                                        d={lineD}
+                                        fill="none"
+                                        stroke="#664229"
+                                        strokeWidth="3"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        filter="url(#shadow)"
+                                        className="transition-all duration-500 ease-out"
+                                    />
+                                )}
+
+                                {/* Hover vertical guideline */}
+                                {hoveredIndex !== null && points[hoveredIndex] && (
+                                    <line
+                                        x1={points[hoveredIndex].x}
+                                        y1={paddingTop}
+                                        x2={points[hoveredIndex].x}
+                                        y2={viewBoxHeight - paddingBottom}
+                                        stroke="#664229"
+                                        strokeWidth="1.5"
+                                        strokeDasharray="4 4"
+                                        className="transition-all duration-150"
+                                    />
+                                )}
+
+                                {/* Data Dots */}
+                                {points.map((p, idx) => {
+                                    const isHovered = hoveredIndex === idx;
+                                    return (
+                                        <g key={idx}>
+                                            <circle
+                                                cx={p.x}
+                                                cy={p.y}
+                                                r={isHovered ? 8 : 4}
+                                                fill={isHovered ? "#664229" : "#ffffff"}
+                                                stroke="#664229"
+                                                strokeWidth={2}
+                                                className="transition-all duration-200 cursor-pointer shadow-sm"
+                                            />
+                                            {isHovered && (
+                                                <circle
+                                                    cx={p.x}
+                                                    cy={p.y}
+                                                    r={12}
+                                                    fill="#664229"
+                                                    fillOpacity="0.15"
+                                                    className="animate-ping"
+                                                />
+                                            )}
+                                        </g>
+                                    );
+                                })}
+
+                                {/* X-Axis Labels (Months) */}
+                                {points.map((p, idx) => (
+                                    <text
+                                        key={idx}
+                                        x={p.x}
+                                        y={viewBoxHeight - 15}
+                                        textAnchor="middle"
+                                        className={`text-[11px] font-semibold transition-colors duration-200 font-sans ${
+                                            hoveredIndex === idx ? 'fill-[#664229] font-bold' : 'fill-gray-400'
+                                        }`}
+                                    >
+                                        {p.label}
+                                    </text>
+                                ))}
+
+                                {/* Interactive Hover Zones */}
+                                {points.map((p, idx) => {
+                                    const colWidth = (viewBoxWidth - paddingLeft - paddingRight) / 5;
+                                    return (
+                                        <rect
+                                            key={idx}
+                                            x={p.x - colWidth / 2}
+                                            y={paddingTop}
+                                            width={colWidth}
+                                            height={viewBoxHeight - paddingTop - paddingBottom}
+                                            fill="transparent"
+                                            className="cursor-pointer"
+                                            onMouseEnter={() => setHoveredIndex(idx)}
+                                            onMouseLeave={() => setHoveredIndex(null)}
+                                        />
+                                    );
+                                })}
+                            </svg>
+
+                            {/* Floating Card Tooltip */}
+                            {hoveredIndex !== null && points[hoveredIndex] && (
+                                <div
+                                    className="absolute bg-white/95 backdrop-blur-md border border-gray-100 rounded-xl shadow-xl p-3 pointer-events-none transition-all duration-150 ease-out z-20 flex flex-col gap-1 min-w-[150px]"
+                                    style={{
+                                        left: `${(points[hoveredIndex].x / viewBoxWidth) * 100}%`,
+                                        top: `${(points[hoveredIndex].y / viewBoxHeight) * 100}%`,
+                                        transform: 'translate(-50%, -100%) translateY(-16px)',
+                                    }}
+                                >
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                        {points[hoveredIndex].label}
+                                    </p>
+                                    <p className="text-sm font-bold text-[#664229]">
+                                        {formatCurrency(points[hoveredIndex].total)}
+                                    </p>
+                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                                        <p className="text-[10px] text-gray-500 font-medium">
+                                            {points[hoveredIndex].count} Transaksi
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
         </AppLayout>
     );

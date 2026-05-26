@@ -6,6 +6,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class SyncMutasiPelaporanJob implements ShouldQueue
 {
@@ -64,7 +65,19 @@ class SyncMutasiPelaporanJob implements ShouldQueue
         $token = config('services.pelaporan.token');
 
         try {
-            $request = Http::timeout(20)->withToken($token)->acceptJson();
+            $request = Http::timeout(20)->withToken($token)->asMultipart();
+
+            // Normalize tanggal_mutasi to MySQL-safe datetime format
+            $tanggalMutasi = $this->tanggalMutasi;
+            if ($tanggalMutasi instanceof \Carbon\Carbon) {
+                $tanggalMutasi = $tanggalMutasi->format('Y-m-d H:i:s');
+            } elseif (is_string($tanggalMutasi) && (str_contains($tanggalMutasi, 'T') || str_contains($tanggalMutasi, 'Z'))) {
+                try {
+                    $tanggalMutasi = \Carbon\Carbon::parse($tanggalMutasi)->format('Y-m-d H:i:s');
+                } catch (\Exception $e) {
+                    // Fallback to original if parsing fails
+                }
+            }
 
             $data = [
                 'id_penghuni'    => $this->idPenghuni,
@@ -74,23 +87,23 @@ class SyncMutasiPelaporanJob implements ShouldQueue
                 'agama'          => $this->agama,
                 'id_kos'         => $this->idKos,
                 'jenis_mutasi'   => $this->jenisMutasi,
-                'tanggal_mutasi' => $this->tanggalMutasi,
+                'tanggal_mutasi' => $tanggalMutasi,
                 'rating'         => $this->rating,
                 'keterangan_rating' => $this->keteranganRating,
             ];
 
-            if ($this->fileKtpPath && \Storage::disk('public')->exists($this->fileKtpPath)) {
+            if ($this->fileKtpPath && Storage::disk('public')->exists($this->fileKtpPath)) {
                 $request->attach(
                     'file_ktp', 
-                    \Storage::disk('public')->get($this->fileKtpPath), 
+                    Storage::disk('public')->get($this->fileKtpPath), 
                     basename($this->fileKtpPath)
                 );
             }
 
-            if ($this->fileKkPath && \Storage::disk('public')->exists($this->fileKkPath)) {
+            if ($this->fileKkPath && Storage::disk('public')->exists($this->fileKkPath)) {
                 $request->attach(
                     'file_kk', 
-                    \Storage::disk('public')->get($this->fileKkPath), 
+                    Storage::disk('public')->get($this->fileKkPath), 
                     basename($this->fileKkPath)
                 );
             }

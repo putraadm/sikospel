@@ -11,13 +11,15 @@ use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $user = $request->user();
+
         // 1. Total Stats
         $totalPenghuni = Penghuni::count();
         $jumlahKos = Kos::count();
         $totalKamar = Room::count();
-        
+
         // 2. Rekap Penghuni (e.g., latest 5)
         $latestPenghuni = Penghuni::with('user')
             ->latest()
@@ -25,10 +27,9 @@ class DashboardController extends Controller
             ->get();
 
         // 3. Rekap Pendapatan (Total and Recent)
-        // Assuming 'payments' table has 'amount_paid' and 'status'
         $totalPendapatan = 0;
         $latestPayments = [];
-        
+
         try {
             $totalPendapatan = \Illuminate\Support\Facades\DB::table('payments')
                 ->where('status', 'sukses')
@@ -40,7 +41,37 @@ class DashboardController extends Controller
                 ->take(5)
                 ->get();
         } catch (\Exception $e) {
-            // Table might not exist or be empty if no migrations run for it yet
+            // ignore
+        }
+
+        // 4. Data Chart Pendapatan (ambil dari Sipenkos API /laporan/pendapatan)
+        // Dashboard page mengharapkan field: kos_id, tanggal_pembayaran, nominal
+        $sipenkosLaporan = [];
+        $kosList = Kos::select('id', 'name')->get();
+
+        try {
+            $token = config('services.pelaporan.token');
+            $baseUrl = config('services.pelaporan.url');
+
+            if ($token && $baseUrl) {
+                $params = ['cetak' => 'true'];
+
+                // catatan: logika pemilik/pemilik_id mengikuti pola di FinancialReportController
+                if ($user?->role?->name === 'pemilik') {
+                    $params['pemilik_id'] = $user->id;
+                }
+
+                $response = \Illuminate\Support\Facades\Http::timeout(30)
+                    ->withToken($token)
+                    ->get($baseUrl . '/laporan/pendapatan', array_filter($params));
+
+                if ($response->successful()) {
+                    $api = $response->json('data');
+                    $sipenkosLaporan = $api['laporan'] ?? [];
+                }
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error Dashboard ambil laporan pendapatan: ' . $e->getMessage());
         }
 
         return Inertia::render('dashboard', [
@@ -50,6 +81,9 @@ class DashboardController extends Controller
             'latestPenghuni' => $latestPenghuni,
             'totalPendapatan' => $totalPendapatan,
             'latestPayments' => $latestPayments,
+            'sipenkosLaporan' => $sipenkosLaporan,
+            'kosList' => $kosList,
         ]);
     }
 }
+

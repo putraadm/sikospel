@@ -4,12 +4,13 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class PelaporanService{
     private function syncMutasiKePelaporan($penghuni, $idKos, $jenisMutasi)
     {
         try {
-            $request = Http::timeout(10)->withToken(env('API_PELAPORAN_TOKEN'));
+            $request = Http::timeout(10)->withToken(config('services.pelaporan.token'))->asMultipart();
 
             $data = [
                 'id_penghuni' => $penghuni->id,
@@ -19,26 +20,26 @@ class PelaporanService{
                 'agama' => $penghuni->agama,
                 'id_kos' => $idKos,
                 'jenis_mutasi' => $jenisMutasi,
-                'tanggal_mutasi' => now()->toDateString(),
+                'tanggal_mutasi' => now()->format('Y-m-d H:i:s'),
             ];
 
-            if ($penghuni->file_path_ktp && \Storage::disk('public')->exists($penghuni->file_path_ktp)) {
+            if ($penghuni->file_path_ktp && Storage::disk('public')->exists($penghuni->file_path_ktp)) {
                 $request->attach(
                     'file_ktp',
-                    \Storage::disk('public')->get($penghuni->file_path_ktp),
+                    Storage::disk('public')->get($penghuni->file_path_ktp),
                     basename($penghuni->file_path_ktp)
                 );
             }
 
-            if ($penghuni->file_path_kk && \Storage::disk('public')->exists($penghuni->file_path_kk)) {
+            if ($penghuni->file_path_kk && Storage::disk('public')->exists($penghuni->file_path_kk)) {
                 $request->attach(
                     'file_kk',
-                    \Storage::disk('public')->get($penghuni->file_path_kk),
+                    Storage::disk('public')->get($penghuni->file_path_kk),
                     basename($penghuni->file_path_kk)
                 );
             }
 
-            $response = $request->post(env('API_PELAPORAN_URL') . '/sync-mutasi', $data);
+            $response = $request->post(config('services.pelaporan.url') . '/sync/mutasi', $data);
 
             if (!$response->successful()) {
                 Log::error('Sync mutasi gagal', [

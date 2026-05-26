@@ -90,6 +90,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             $latestPayments = Payment::whereIn('invoice_id',
                 Invoice::whereIn('tenancy_id', $penyewaanIds)->pluck('id')
             )->latest('payment_date')->take(5)->get();
+
+            $kosList = Kos::where('owner_id', $pemilik->user_id)->select('id', 'name')->get();
         } else {
             $totalPenghuni = Penghuni::count();
             $jumlahKos = Kos::count();
@@ -97,6 +99,43 @@ Route::middleware(['auth', 'verified'])->group(function () {
             $totalPendapatan = Payment::where('status', 'sukses')->sum('amount_paid');
             $latestPenghuni = Penghuni::with('user')->latest('created_at')->take(5)->get();
             $latestPayments = Payment::latest('payment_date')->take(5)->get();
+
+            $kosList = Kos::select('id', 'name')->get();
+        }
+
+        // Fetch pendapatan data from Sipenkos API
+        $sipenkosLaporan = [];
+        try {
+            $url = config('services.pelaporan.url') . '/laporan/pendapatan';
+            $token = config('services.pelaporan.token');
+            
+            $params = ['cetak' => 'true'];
+            if ($user->role && $user->role->name === 'pemilik' && $pemilik) {
+                $params['pemilik_id'] = $pemilik->user_id;
+            }
+
+            $response = \Illuminate\Support\Facades\Http::timeout(3)->withToken($token)->get($url, $params);
+            
+            if ($response->successful()) {
+                $sipenkosLaporan = $response->json('data.laporan') ?? [];
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Gagal mengambil laporan pendapatan dari API Sipenkos: ' . $e->getMessage());
+        }
+
+        // Fallback to direct DB query if API failed (databases are on the same MySQL server)
+        if (empty($sipenkosLaporan)) {
+            try {
+                $query = \Illuminate\Support\Facades\DB::table('sipenkos.rekap_pendapatan');
+                if ($user->role && $user->role->name === 'pemilik' && $pemilik) {
+                    $query->where('pemilik_id', $pemilik->user_id);
+                }
+                $sipenkosLaporan = $query->get()->map(function ($item) {
+                    return (array) $item;
+                })->toArray();
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Fallback DB Sipenkos failed: ' . $e->getMessage());
+            }
         }
 
         return Inertia::render('dashboard', [
@@ -106,6 +145,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'totalPendapatan' => $totalPendapatan,
             'latestPenghuni' => $latestPenghuni,
             'latestPayments' => $latestPayments,
+            'sipenkosLaporan' => $sipenkosLaporan,
+            'kosList' => $kosList,
         ]);
     })->name('dashboard');
 
