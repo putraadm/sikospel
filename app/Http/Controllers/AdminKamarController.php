@@ -44,9 +44,18 @@ class AdminKamarController extends Controller
     {
         $request->validate([
             'kos_id' => 'required|exists:kos,id',
-            'room_number' => 'required|string|max:255',
+            'room_number' => [
+                'required', 
+                'string', 
+                'max:255',
+                \Illuminate\Validation\Rule::unique('rooms')->where(function ($query) use ($request) {
+                    return $query->where('kos_id', $request->kos_id);
+                })
+            ],
             'type_kamar_id' => 'required|exists:type_kamars,id',
             'status' => 'required|string|max:255',
+        ], [
+            'room_number.unique' => 'Nama kamar ini sudah ada di Kos tersebut. Silakan gunakan nama kamar lain.',
         ]);
 
         $data = $request->all();
@@ -63,9 +72,18 @@ class AdminKamarController extends Controller
 
         $request->validate([
             'kos_id' => 'required|exists:kos,id',
-            'room_number' => 'required|string|max:255',
+            'room_number' => [
+                'required', 
+                'string', 
+                'max:255',
+                \Illuminate\Validation\Rule::unique('rooms')->where(function ($query) use ($request) {
+                    return $query->where('kos_id', $request->kos_id);
+                })->ignore($id)
+            ],
             'type_kamar_id' => 'required|exists:type_kamars,id',
             'status' => 'required|string|max:255',
+        ], [
+            'room_number.unique' => 'Nama kamar ini sudah ada di Kos tersebut. Silakan gunakan nama kamar lain.',
         ]);
 
         $room = Room::where('id', $id);

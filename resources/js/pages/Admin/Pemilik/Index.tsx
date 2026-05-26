@@ -139,7 +139,8 @@ export default function Index({ pemilik, users }: Props) {
             cell: ({ row }) => <div className="font-medium">{row.getValue('name')}</div>,
         },
         {
-            accessorKey: 'user',
+            accessorFn: row => row.user?.email || '',
+            id: 'user',
             header: 'User Akun',
             cell: ({ row }) => {
                 const user = row.original.user;

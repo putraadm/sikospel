@@ -15,13 +15,14 @@ class CheckNikController extends Controller
      */
     public function __invoke($nik)
     {
-        $penghuni = Penghuni::where('nik', $nik)->first();
+        $penghuni = Penghuni::withTrashed()->with('user')->where('nik', $nik)->first();
 
         if ($penghuni) {
+            $user = $penghuni->user()->withTrashed()->first();
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'username' => $penghuni->user->username ?? '',
+                    'username' => $user->username ?? '',
                     'name' => $penghuni->name,
                     'no_wa' => $penghuni->no_wa,
                     'address' => $penghuni->address,

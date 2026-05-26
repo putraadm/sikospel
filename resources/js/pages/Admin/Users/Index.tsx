@@ -148,7 +148,8 @@ export default function Index({ users, roles }: Props) {
             cell: ({ row }) => <div>{row.getValue('email')}</div>,
         },
         {
-            accessorKey: 'role',
+            accessorFn: row => row.role?.name || '',
+            id: 'role',
             header: 'Role',
             cell: ({ row }) => {
                 const role = row.original.role;

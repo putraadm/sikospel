@@ -16,10 +16,31 @@ class PaymentController extends Controller
 {
     public function __construct()
     {
-        Config::$serverKey = config('midtrans.server_key');
+        $this->setMidtransConfig();
+    }
+
+    private function setMidtransConfig($kos = null)
+    {
+        Config::$serverKey = ($kos && $kos->midtrans_server_key) ? $kos->midtrans_server_key : config('midtrans.server_key');
         Config::$isProduction = config('midtrans.is_production');
         Config::$isSanitized = config('midtrans.is_sanitized');
         Config::$is3ds = config('midtrans.is_3ds');
+    }
+
+    private function getInvoiceIdFromOrderId($orderId)
+    {
+        $invoiceId = null;
+        if (preg_match('/INV-(\d+)/i', $orderId, $matches)) {
+            $invoiceId = $matches[1];
+        } 
+        
+        if (!$invoiceId || !is_numeric($invoiceId)) {
+             $idParts = explode('-', $orderId);
+             if (count($idParts) >= 2 && is_numeric($idParts[1])) {
+                 $invoiceId = $idParts[1];
+             }
+        }
+        return $invoiceId;
     }
 
     public function getSnapToken(Request $request)
@@ -29,7 +50,10 @@ class PaymentController extends Controller
             'feedback' => 'nullable|string|max:255',
         ]);
 
-        $invoice = Invoice::with(['tenancy.penghuni.user'])->findOrFail($request->invoice_id);
+        $invoice = Invoice::with(['tenancy.room.kos', 'tenancy.penghuni.user'])->findOrFail($request->invoice_id);
+        
+        $kos = $invoice->tenancy->room->kos;
+        $this->setMidtransConfig($kos);
 
         // Validasi Otorisasi: Pastikan invoice milik user yang login (jika dia penghuni)
         $user = auth()->user();
@@ -85,6 +109,14 @@ class PaymentController extends Controller
         ]);
 
         try {
+            $invoiceId = $this->getInvoiceIdFromOrderId($request->order_id);
+            if ($invoiceId) {
+                $invoice = Invoice::with(['tenancy.room.kos'])->find($invoiceId);
+                if ($invoice) {
+                    $this->setMidtransConfig($invoice->tenancy->room->kos);
+                }
+            }
+
             $status = Transaction::status($request->order_id);
             
             $this->updatePaymentStatus($status);
@@ -117,24 +149,14 @@ class PaymentController extends Controller
 
         $feedback = $isObject ? ($notification->custom_field1 ?? null) : ($notification['custom_field1'] ?? null);
 
-        $invoiceId = null;
-        if (preg_match('/INV-(\d+)/i', $orderId, $matches)) {
-            $invoiceId = $matches[1];
-        } 
-        
-        if (!$invoiceId || !is_numeric($invoiceId)) {
-             $idParts = explode('-', $orderId);
-             if (count($idParts) >= 2 && is_numeric($idParts[1])) {
-                 $invoiceId = $idParts[1];
-             }
-        }
-
         if (!$invoiceId) {
             throw new \Exception("Could not extract valid Invoice ID from Order ID: " . $orderId);
         }
 
-        DB::transaction(function () use ($invoiceId, $transaction, $type, $midtransTransactionId, $grossAmount, $fraud, $feedback) {
-            $invoice = Invoice::findOrFail($invoiceId);
+        $invoice = Invoice::with(['tenancy.room.kos'])->findOrFail($invoiceId);
+        $this->setMidtransConfig($invoice->tenancy->room->kos);
+
+        DB::transaction(function () use ($invoice, $transaction, $type, $midtransTransactionId, $grossAmount, $fraud, $feedback) {
 
             $paymentStatus = 'pending';
             $invoiceStatus = 'belum_dibayar';
@@ -199,9 +221,20 @@ class PaymentController extends Controller
             $orderId = $request->order_id;
             $statusCode = $request->status_code;
             $grossAmount = $request->gross_amount;
+            $invoiceId = $this->getInvoiceIdFromOrderId($orderId);
             $serverKey = config('midtrans.server_key');
-            $incomingSignature = $request->signature_key;
 
+            if ($invoiceId) {
+                $invoice = Invoice::with(['tenancy.room.kos'])->find($invoiceId);
+                if ($invoice && $invoice->tenancy && $invoice->tenancy->room && $invoice->tenancy->room->kos) {
+                    $kos = $invoice->tenancy->room->kos;
+                    if ($kos->midtrans_server_key) {
+                        $serverKey = $kos->midtrans_server_key;
+                    }
+                }
+            }
+
+            $incomingSignature = $request->signature_key;
             $expectedSignature = hash('sha512', $orderId . $statusCode . $grossAmount . $serverKey);
 
             if ($expectedSignature !== $incomingSignature) {

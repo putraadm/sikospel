@@ -19,6 +19,12 @@ class Kos extends Model
         'image',
         'description',
         'gender_type',
+        'midtrans_server_key',
+        'midtrans_client_key',
+    ];
+
+    protected $hidden = [
+        'midtrans_server_key',
     ];
 
     public function owner()

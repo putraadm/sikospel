@@ -210,6 +210,7 @@ export default function Index({ penghuni, kos, filters, flash }: Props) {
             },
         },
         {
+            accessorFn: row => row.current_room ? `${row.current_room.room_number} ${row.current_room.kos?.name || ''}` : '',
             id: 'room',
             header: 'Kamar',
             cell: ({ row }) => (
@@ -357,8 +358,8 @@ export default function Index({ penghuni, kos, filters, flash }: Props) {
                                                 selectedPenghuni.status_penghuni === 'penghuni'
                                                     ? 'bg-green-100 text-green-700 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400'
                                                     : selectedPenghuni.status_penghuni === 'pra penghuni'
-                                                    ? 'bg-blue-100 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400'
-                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-400'
+                                                        ? 'bg-blue-100 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400'
+                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-400'
                                             )}>
                                                 {selectedPenghuni.status_penghuni}
                                             </Badge>

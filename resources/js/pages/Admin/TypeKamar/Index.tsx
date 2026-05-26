@@ -219,7 +219,7 @@ export default function Index({ typeKamars }: Props) {
 
     const columns: ColumnDef<TypeKamar>[] = [
         {
-            accessorKey: 'images',
+            id: 'images',
             header: 'Foto',
             cell: ({ row }) => (
                 <div className="flex -space-x-2 overflow-hidden">
@@ -250,7 +250,8 @@ export default function Index({ typeKamars }: Props) {
             cell: ({ row }) => <div className="max-w-[300px] truncate">{row.getValue('deskripsi')}</div>,
         },
         {
-            accessorKey: 'facilities',
+            accessorFn: row => (row.facilities || []).join(', '),
+            id: 'facilities',
             header: 'Fasilitas',
             cell: ({ row }) => {
                 const facs = row.original.facilities || [];

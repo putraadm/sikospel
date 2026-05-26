@@ -59,7 +59,7 @@ export default function Login({
                             </div>
 
                             <div className="grid gap-2">
-                                <div className="flex items-center justify-between">
+                                {/* <div className="flex items-center justify-between">
                                     <Label htmlFor="password">Password</Label>
                                     {canResetPassword && (
                                         <TextLink
@@ -70,7 +70,7 @@ export default function Login({
                                             Lupa password?
                                         </TextLink>
                                     )}
-                                </div>
+                                </div> */}
                                 <div className="relative">
                                     <Lock className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                                     <Input

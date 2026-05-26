@@ -38,13 +38,21 @@ class AdminInvoiceController extends Controller
             });
         }
 
+        if (request('month') && request('month') !== 'all') {
+            $query->whereMonth('billing_period', request('month'));
+        }
+
+        if (request('year') && request('year') !== 'all') {
+            $query->whereYear('billing_period', request('year'));
+        }
+
         $kosList = $user->role->name === 'superadmin' ? Kos::all() : 
                   ($user->role->name === 'pemilik' ? Kos::where('owner_id', $user->id)->get() : collect([]));
 
         return Inertia::render('admin/Tagihan/Index', [
             'invoices' => $query->get(),
             'koses' => $kosList,
-            'filters' => request()->only(['kos_id'])
+            'filters' => request()->only(['kos_id', 'month', 'year'])
         ]);
     }
 
