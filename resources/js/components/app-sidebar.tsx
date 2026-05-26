@@ -18,79 +18,6 @@ import { type NavItem, type SharedData } from '@/types';
 
 import AppLogo from './app-logo';
 
-// Admin & Pemilik nav items
-const adminNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Roles',
-        href: '/admin/roles',
-        icon: Users,
-    },
-    {
-        title: 'Users',
-        href: '/admin/users',
-        icon: User,
-    },
-    {
-        title: 'Pemilik',
-        href: '/admin/pemilik',
-        icon: User,
-    },
-    {
-        title: 'Kos',
-        href: '/admin/kos',
-        icon: Home,
-    },
-    {
-        title: 'Kamar',
-        href: '/admin/room',
-        icon: BedDouble,
-    },
-    {
-        title: 'Tipe Kamar',
-        href: '/admin/type-kamar',
-        icon: BedDouble,
-    },
-    {
-        title: 'Penghuni',
-        href: '/admin/penghuni',
-        icon: Users,
-    },
-    {
-        title: 'Tagihan',
-        href: '/admin/tagihan',
-        icon: CreditCard,
-    },
-    {
-        title: 'Laporan Keuangan',
-        href: '/admin/laporan-keuangan',
-        icon: FileText,
-    },
-    {
-        title: 'Kritik & Saran',
-        href: '/admin/feedback',
-        icon: MessageSquare,
-    },
-];
-
-// Penghuni nav items
-const penghuniNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Tagihan',
-        href: '/penghuni/tagihan',
-        icon: CreditCard,
-    },
-];
-
 const footerNavItems: NavItem[] = [];
 
 export function AppSidebar() {
@@ -98,6 +25,82 @@ export function AppSidebar() {
     const roleName = auth.user?.role?.name;
 
     const getNavItems = (): NavItem[] => {
+        const adminNavItems: NavItem[] = [
+            {
+                title: 'Dashboard',
+                href: dashboard(),
+                icon: LayoutGrid,
+            },
+            {
+                title: 'Roles',
+                href: '/admin/roles',
+                icon: Users,
+            },
+            {
+                title: 'Users',
+                href: '/admin/users',
+                icon: User,
+            },
+            {
+                title: 'Pemilik',
+                href: '/admin/pemilik',
+                icon: User,
+            },
+            {
+                title: 'Kos',
+                href: '/admin/kos',
+                icon: Home,
+            },
+            {
+                title: 'Kamar',
+                href: '/admin/room',
+                icon: BedDouble,
+            },
+            {
+                title: 'Tipe Kamar',
+                href: '/admin/type-kamar',
+                icon: BedDouble,
+            },
+            {
+                title: 'Penghuni',
+                href: '/admin/penghuni',
+                icon: Users,
+            },
+            {
+                title: 'Tagihan',
+                href: '/admin/tagihan',
+                icon: CreditCard,
+            },
+            {
+                title: 'Laporan Keuangan',
+                href: '/admin/laporan-keuangan',
+                icon: FileText,
+            },
+            {
+                title: 'Kritik & Saran',
+                href: '/admin/feedback',
+                icon: MessageSquare,
+            },
+            {
+                title: 'Midtrans',
+                href: typeof route !== 'undefined' ? route('admin.midtrans.index') : '/admin/midtrans',
+                icon: CreditCard,
+            },
+        ];
+
+        const penghuniNavItems: NavItem[] = [
+            {
+                title: 'Dashboard',
+                href: dashboard(),
+                icon: LayoutGrid,
+            },
+            {
+                title: 'Tagihan',
+                href: '/penghuni/tagihan',
+                icon: CreditCard,
+            },
+        ];
+
         if (roleName === 'penghuni') {
             return penghuniNavItems;
         }
@@ -105,7 +108,7 @@ export function AppSidebar() {
         return adminNavItems.filter(item => {
             if (roleName === 'superadmin') return true;
             if (roleName === 'pemilik') {
-                return ['Dashboard', 'Penghuni', 'Kos', 'Kamar', 'Tagihan', 'Tipe Kamar', 'Kritik & Saran', 'Laporan Keuangan'].includes(item.title);
+                return ['Dashboard', 'Penghuni', 'Kos', 'Kamar', 'Tagihan', 'Tipe Kamar', 'Kritik & Saran', 'Laporan Keuangan', 'Midtrans'].includes(item.title);
             }
             return false;
         });

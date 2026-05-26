@@ -77,15 +77,47 @@ interface Invoice {
 interface Props {
     invoices: Invoice[];
     koses?: Kos[];
-    filters?: { kos_id?: string };
+    filters?: {
+        kos_id?: string;
+        month?: string;
+        year?: string;
+    };
 }
 
 export default function Tagihan({ invoices = [], koses = [], filters = {} }: Props) {
     const [kosFilter, setKosFilter] = useState<string>(filters.kos_id || 'all');
+    const [monthFilter, setMonthFilter] = useState<string>(filters.month || 'all');
+    const [yearFilter, setYearFilter] = useState<string>(filters.year || 'all');
+
+    const handleFilterChange = (newFilters: any) => {
+        const params = {
+            kos_id: newFilters.kos_id !== undefined ? newFilters.kos_id : kosFilter,
+            month: newFilters.month !== undefined ? newFilters.month : monthFilter,
+            year: newFilters.year !== undefined ? newFilters.year : yearFilter,
+        };
+
+        // Clean up 'all' values for the URL
+        const cleanedParams: any = {};
+        if (params.kos_id !== 'all') cleanedParams.kos_id = params.kos_id;
+        if (params.month !== 'all') cleanedParams.month = params.month;
+        if (params.year !== 'all') cleanedParams.year = params.year;
+
+        router.get('/admin/tagihan', cleanedParams, { preserveState: true, preserveScroll: true });
+    };
 
     const handleKosFilterChange = (value: string) => {
         setKosFilter(value);
-        router.get('/admin/tagihan', { kos_id: value }, { preserveState: true, preserveScroll: true });
+        handleFilterChange({ kos_id: value });
+    };
+
+    const handleMonthFilterChange = (value: string) => {
+        setMonthFilter(value);
+        handleFilterChange({ month: value });
+    };
+
+    const handleYearFilterChange = (value: string) => {
+        setYearFilter(value);
+        handleFilterChange({ year: value });
     };
     const [selectedProof, setSelectedProof] = useState<string | null>(null);
     const [confirmPaidId, setConfirmPaidId] = useState<number | null>(null);
@@ -197,6 +229,7 @@ export default function Tagihan({ invoices = [], koses = [], filters = {} }: Pro
 
     const columnsPembayaran: ColumnDef<Invoice>[] = [
         {
+            accessorFn: row => `${row.tenancy?.penghuni?.name} ${row.tenancy?.room?.room_number} ${row.tenancy?.room?.kos?.name}`,
             id: 'penghuni',
             header: 'Penghuni',
             cell: ({ row }) => (
@@ -211,7 +244,11 @@ export default function Tagihan({ invoices = [], koses = [], filters = {} }: Pro
             ),
         },
         {
-            accessorKey: 'billing_period',
+            accessorFn: row => {
+                const date = new Date(row.billing_period);
+                return date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+            },
+            id: 'billing_period',
             header: 'Periode',
             cell: ({ row }) => {
                 const date = new Date(row.original.billing_period);
@@ -219,6 +256,7 @@ export default function Tagihan({ invoices = [], koses = [], filters = {} }: Pro
             },
         },
         {
+            accessorFn: row => row.amount.toString(),
             id: 'amount',
             header: 'Total Tagihan',
             cell: ({ row }) => {
@@ -337,7 +375,7 @@ export default function Tagihan({ invoices = [], koses = [], filters = {} }: Pro
                     <div className="flex items-center gap-2">
                         {koses && koses.length > 0 && (
                             <Select value={kosFilter} onValueChange={handleKosFilterChange}>
-                                <SelectTrigger className="w-[180px] bg-white dark:bg-[#161615]">
+                                <SelectTrigger className="w-[150px] bg-white dark:bg-[#161615]">
                                     <SelectValue placeholder="Semua Kos" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -348,6 +386,32 @@ export default function Tagihan({ invoices = [], koses = [], filters = {} }: Pro
                                 </SelectContent>
                             </Select>
                         )}
+
+                        <Select value={monthFilter} onValueChange={handleMonthFilterChange}>
+                            <SelectTrigger className="w-[130px] bg-white dark:bg-[#161615]">
+                                <SelectValue placeholder="Bulan" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Semua Bulan</SelectItem>
+                                {Array.from({ length: 12 }, (_, i) => (
+                                    <SelectItem key={i + 1} value={(i + 1).toString()}>
+                                        {new Date(0, i).toLocaleDateString('id-ID', { month: 'long' })}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
+                        <Select value={yearFilter} onValueChange={handleYearFilterChange}>
+                            <SelectTrigger className="w-[110px] bg-white dark:bg-[#161615]">
+                                <SelectValue placeholder="Tahun" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Semua Tahun</SelectItem>
+                                {[2024, 2025, 2026].map((y) => (
+                                    <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                         <Button
                             onClick={() => setIsGenerateDialogOpen(true)}
                             className="bg-[#664229] hover:bg-[#523521] text-white flex items-center gap-2"

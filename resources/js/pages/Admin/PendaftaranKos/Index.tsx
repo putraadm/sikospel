@@ -74,7 +74,8 @@ export default function Index({ pendaftaranKos }: Props) {
             ),
         },
         {
-            accessorKey: 'type_kamar',
+            accessorFn: row => row.type_kamar ? row.type_kamar.nama : '-',
+            id: 'type_kamar',
             header: 'Pilihan Tipe',
             cell: ({ row }) => {
                 const type = row.original.type_kamar;
@@ -89,7 +90,8 @@ export default function Index({ pendaftaranKos }: Props) {
             },
         },
         {
-            accessorKey: 'assigned_room',
+            accessorFn: row => row.assigned_room ? row.assigned_room.room_number : '',
+            id: 'assigned_room',
             header: 'Kamar Terpilih',
             cell: ({ row }) => {
                 const room = row.original.assigned_room as any;

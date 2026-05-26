@@ -293,7 +293,15 @@ export default function Show({ pendaftaranKos, availableRooms, flash }: Props) {
                         <div className="space-y-4">
                             <div>
                                 <Label>Alamat</Label>
-                                <p className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">{pendaftaranKos.alamat}</p>
+                                <a
+                                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pendaftaranKos.alamat)}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="mt-1 block text-sm text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                                    title="Lihat alamat di Google Maps"
+                                >
+                                    {pendaftaranKos.alamat}
+                                </a>
                             </div>
                             <div>
                                 <Label>File KTP</Label>

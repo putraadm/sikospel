@@ -18,16 +18,19 @@ class AdminKosController extends Controller
         $user = auth()->user();
         
         if ($user->role->name === 'superadmin') {
-            $kos = Kos::with('owner.user')->get();
+            $kos = Kos::with('owner.user')->get()->each->makeVisible('midtrans_server_key');
             $pemilik = Pemilik::with('user')->get();
         } else {
             $pemilikData = Pemilik::where('user_id', $user->id)->first();
             
             if (!$pemilikData) {
-                 $kos = []; 
+                 $kos = collect(); 
                  $pemilik = [];
             } else {
-                $kos = Kos::where('owner_id', $pemilikData->user_id)->with('owner.user')->get();
+                $kos = Kos::where('owner_id', $pemilikData->user_id)
+                    ->with('owner.user')
+                    ->get()
+                    ->each->makeVisible('midtrans_server_key');
                 $pemilik = [$pemilikData];
             }
         }
@@ -50,6 +53,8 @@ class AdminKosController extends Controller
             'description' => 'required|string',
             'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'gender_type' => 'required|in:putra,putri,campuran',
+            'midtrans_server_key' => 'nullable|string|max:255',
+            'midtrans_client_key' => 'nullable|string|max:255',
         ];
 
         if ($user->role->name === 'superadmin') {
@@ -122,6 +127,8 @@ class AdminKosController extends Controller
             'description' => 'required|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'gender_type' => 'required|in:putra,putri,campuran',
+            'midtrans_server_key' => 'nullable|string|max:255',
+            'midtrans_client_key' => 'nullable|string|max:255',
         ];
 
         if ($user->role->name === 'superadmin') {

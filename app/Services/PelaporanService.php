@@ -11,6 +11,7 @@ class PelaporanService{
     {
         try {
             $request = Http::timeout(10)->withToken(config('services.pelaporan.token'))->asMultipart();
+            // $request = Http::timeout(10)->withToken(config('services.pelaporan.token'));
 
             $data = [
                 'id_penghuni' => $penghuni->id,

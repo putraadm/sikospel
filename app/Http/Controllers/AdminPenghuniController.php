@@ -120,12 +120,12 @@ class AdminPenghuniController extends Controller
         // First, check if NIK already exists to determine if we need a new user
         $existingPenghuni = null;
         if ($request->nik) {
-            $existingPenghuni = Penghuni::where('nik', $request->nik)->first();
+            $existingPenghuni = Penghuni::withTrashed()->where('nik', $request->nik)->first();
         }
 
         $request->validate([
             'username' => $existingPenghuni ? 'nullable|string' : 'required|string|max:255|unique:users,username',
-            'nik' => 'nullable|string|size:16',
+            'nik' => 'required|string|size:16|unique:penghuni,nik' . ($existingPenghuni ? ',' . $existingPenghuni->user_id . ',user_id' : ''),
             'name' => 'required|string|max:255',
             'no_wa' => 'nullable|string|max:20',
             'address' => 'nullable|string',
@@ -143,7 +143,13 @@ class AdminPenghuniController extends Controller
             $password = null;
 
             if ($existingPenghuni) {
-                $user = $existingPenghuni->user;
+                if ($existingPenghuni->trashed()) {
+                    $existingPenghuni->restore();
+                }
+                $user = $existingPenghuni->user()->withTrashed()->first();
+                if ($user && $user->trashed()) {
+                    $user->restore();
+                }
             } else {
                 $password = \Str::random(8);
                 $user = User::create([
@@ -230,8 +236,7 @@ class AdminPenghuniController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            // 'nik' => 'required|string|size:16|unique:penghuni,nik,' . $id . ',user_id',
-            'nik' => 'nullable|string|size:16',
+            'nik' => 'required|string|size:16|unique:penghuni,nik,' . $id . ',user_id',
             'name' => 'required|string|max:255',
             'no_wa' => 'nullable|string|max:20',
             'address' => 'nullable|string',
@@ -284,6 +289,11 @@ class AdminPenghuniController extends Controller
                         $mutasiDispatched = true;
                     }
                     $currentPenyewaan->update(['status' => 'selesai', 'end_date' => now()]);
+                    
+                    // Hapus tagihan yang belum dibayar jika penghuni keluar
+                    Invoice::where('tenancy_id', $currentPenyewaan->id)
+                        ->where('status', 'belum_dibayar')
+                        ->delete();
                 }
             } elseif ($request->room_id) {
                 $currentPenyewaan = $penghuni->currentPenyewaan;
@@ -381,6 +391,11 @@ class AdminPenghuniController extends Controller
                 }
                 // Akhiri masa sewa
                 $currentPenyewaan->update(['status' => 'selesai', 'end_date' => now()]);
+
+                // Hapus tagihan yang belum dibayar saat penghuni dihapus
+                Invoice::where('tenancy_id', $currentPenyewaan->id)
+                    ->where('status', 'belum_dibayar')
+                    ->delete();
             }
 
             if ($idKosKeluar) {

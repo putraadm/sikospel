@@ -151,7 +151,8 @@ export default function Index({ rooms, kos, typeKamars }: Props) {
             header: 'Kos',
         },
         {
-            accessorKey: 'type_kamar',
+            accessorFn: row => row.type_kamar?.nama || '-',
+            id: 'type_kamar',
             header: 'Tipe Kamar',
             cell: ({ row }) => <div className="font-medium">{row.original.type_kamar?.nama || '-'}</div>,
         },

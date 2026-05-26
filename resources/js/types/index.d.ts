@@ -64,6 +64,8 @@ export interface Kos {
     gender_type: 'putra' | 'putri' | 'campuran';
     owner: Pemilik;
     rooms?: Room[];
+    midtrans_server_key?: string;
+    midtrans_client_key?: string;
 }
 
 export interface TypeKamar {
